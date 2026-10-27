@@ -1,16 +1,19 @@
-
-import { useEffect, useRef, useState } from 'react';
-import Topbar from '../components/layout/Topbar.jsx';
-import ScanForm from '../components/scan/ScanForm.jsx';
-import SummaryCards from '../components/dashboard/SummaryCards.jsx';
-import IssuePanel from '../components/issues/IssuePanel.jsx';
-import CrawlModal from '../components/crawl/CrawlModal.jsx';
-import WebsitePreview from '../components/preview/WebsitePreview.jsx';
-import ReportActions from '../components/reports/ReportActions.jsx';
-import MonitoringPanel from '../components/monitoring/MonitoringPanel.jsx';
-import GitHubIntegration from '../components/github/GitHubIntegration.jsx';
-import { createScan } from '../services/scanService.js';
-import useScanStatus from '../hooks/useScanStatus.js';
+import { useEffect, useRef, useState } from "react";
+import Topbar from "../components/layout/Topbar.jsx";
+import ScanForm from "../components/scan/ScanForm.jsx";
+import SummaryCards from "../components/dashboard/SummaryCards.jsx";
+import IssuePanel from "../components/issues/IssuePanel.jsx";
+import CrawlModal from "../components/crawl/CrawlModal.jsx";
+import WebsitePreviewScreenshot from "../components/preview/WebsitePreviewScreenshot.jsx";
+import ReportActions from "../components/reports/ReportActions.jsx";
+import MonitoringPanelConnected from "../components/monitoring/MonitoringPanelConnected.jsx";
+import GitHubIntegration from "../components/github/GitHubIntegration.jsx";
+import { createScan } from "../services/scanService.js";
+import { createCrawl } from "../services/crawlService.js";
+import useScanStatus from "../hooks/useScanStatus.js";
+import useCrawlStatus from "../hooks/useCrawlStatus.js";
+import RoadmapPanel from "../components/issues/RoadmapPanel.jsx";
+import ScanComparison from "../components/scan/ScanComparison.jsx";
 import {
   Activity,
   ArrowUpRight,
@@ -31,79 +34,7 @@ import {
   ExternalLink,
   AlertCircle,
   Code2,
-} from 'lucide-react';
-
-const demoIssues = [
-  {
-    id: 'image-alt',
-    title: 'Image missing alternative text',
-    rule: 'image-alt',
-    severity: 'critical',
-    wcag: '1.1.1',
-    count: 3,
-    selector: 'img.hero-art',
-    explanation:
-      'Images that convey information need a text alternative so screen reader users can understand their purpose.',
-    snippet: '<img class="hero-art" src="/hero.jpg">',
-    fix: '<img class="hero-art" src="/hero.jpg" alt="People collaborating around a table">',
-    status: 'Not tested',
-  },
-  {
-    id: 'contrast',
-    title: 'Text has insufficient contrast',
-    rule: 'color-contrast',
-    severity: 'serious',
-    wcag: '1.4.3',
-    count: 2,
-    selector: '.muted-copy',
-    explanation:
-      'This text does not have enough contrast against its background to remain readable for many people.',
-    snippet: '<p class="muted-copy">Make room for better work.</p>',
-    fix: '<p class="muted-copy">Make room for better work.</p>\n/* use #595959 or darker on white */',
-    status: 'Not tested',
-  },
-  {
-    id: 'button-name',
-    title: 'Button has no accessible name',
-    rule: 'button-name',
-    severity: 'serious',
-    wcag: '4.1.2',
-    count: 1,
-    selector: 'button.icon-only',
-    explanation: 'A button needs a programmatic name that describes its action.',
-    snippet: '<button class="icon-only"><svg>…</svg></button>',
-    fix: '<button class="icon-only" aria-label="Open your account"><svg>…</svg></button>',
-    status: 'Not tested',
-  },
-  {
-    id: 'label',
-    title: 'Form field has no label',
-    rule: 'label',
-    severity: 'moderate',
-    wcag: '1.3.1',
-    count: 1,
-    selector: 'input#email',
-    explanation:
-      'Visible and programmatic labels help people identify what information belongs in a field.',
-    snippet: '<input id="email" type="email">',
-    fix: '<label for="email">Work email</label>\n<input id="email" type="email">',
-    status: 'Not tested',
-  },
-  {
-    id: 'lang',
-    title: 'Document language is missing',
-    rule: 'html-has-lang',
-    severity: 'moderate',
-    wcag: '3.1.1',
-    count: 1,
-    selector: 'html',
-    explanation:
-      'Set the page language so assistive technology can pronounce content correctly.',
-    snippet: '<html>',
-    fix: '<html lang="en">',
-    status: 'Not tested',
-  },
-];
+} from "lucide-react";
 
 const demoHtml = `<!doctype html>
 <html lang="en">
@@ -155,22 +86,22 @@ small{color:#777}
 </html>`;
 
 const cardStyle =
-  'overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-[0_4px_14px_rgba(0,0,0,0.035),0_14px_35px_rgba(0,0,0,0.035)] transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-black/10';
+  "overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-[0_4px_14px_rgba(0,0,0,0.035),0_14px_35px_rgba(0,0,0,0.035)] transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-black/10";
 
 const primaryButton =
-  'inline-flex min-h-[44px] items-center justify-center gap-2.5 rounded-xl bg-zinc-900 px-5 text-[12px] font-bold text-white shadow-[0_4px_14px_rgba(0,0,0,0.12)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-[0_8px_22px_rgba(0,0,0,0.18)] active:scale-[0.98] dark:bg-orange-600 dark:hover:bg-orange-500';
+  "inline-flex min-h-[44px] items-center justify-center gap-2.5 rounded-xl bg-zinc-900 px-5 text-[12px] font-bold text-white shadow-[0_4px_14px_rgba(0,0,0,0.12)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-[0_8px_22px_rgba(0,0,0,0.18)] active:scale-[0.98] dark:bg-orange-600 dark:hover:bg-orange-500";
 
 const secondaryButton =
-  'inline-flex min-h-[43px] items-center justify-center gap-2.5 rounded-xl border border-zinc-200 bg-white px-4 text-[12px] font-bold text-zinc-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 hover:shadow-md active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-orange-800 dark:hover:bg-orange-500/10 dark:hover:text-orange-400';
+  "inline-flex min-h-[43px] items-center justify-center gap-2.5 rounded-xl border border-zinc-200 bg-white px-4 text-[12px] font-bold text-zinc-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 hover:shadow-md active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-orange-800 dark:hover:bg-orange-500/10 dark:hover:text-orange-400";
 
-function Badge({ children, tone = 'neutral' }) {
+function Badge({ children, tone = "neutral" }) {
   const tones = {
     neutral:
-      'border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
+      "border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
     orange:
-      'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900/50 dark:bg-orange-500/10 dark:text-orange-400',
+      "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900/50 dark:bg-orange-500/10 dark:text-orange-400",
     green:
-      'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-500/10 dark:text-emerald-400',
+      "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-500/10 dark:text-emerald-400",
   };
 
   return (
@@ -186,18 +117,13 @@ function Badge({ children, tone = 'neutral' }) {
 
 function safeHost(value) {
   try {
-    return value ? new URL(value).host : 'sample-page.design';
+    return value ? new URL(value).host : "sample-page.design";
   } catch {
-    return 'sample-page.design';
+    return "sample-page.design";
   }
 }
 
-function PageHeader({
-  title,
-  description,
-  icon: Icon,
-  onNavigate,
-}) {
+function PageHeader({ title, description, icon: Icon, onNavigate }) {
   return (
     <section className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 items-start gap-4">
@@ -221,7 +147,7 @@ function PageHeader({
       {onNavigate && (
         <button
           type="button"
-          onClick={() => onNavigate('workspace')}
+          onClick={() => onNavigate("workspace")}
           className={`${secondaryButton} shrink-0 self-start`}
         >
           <ArrowLeft size={16} />
@@ -233,146 +159,274 @@ function PageHeader({
 }
 
 export default function AuditDashboard() {
+  const [websiteDescription, setWebsiteDescription] = useState("");
+  const [websiteCategory, setWebsiteCategory] = useState("General");
   const [issues, setIssues] = useState([]);
-  const [activeId, setActiveId] = useState('');
-  const [expanded, setExpanded] = useState('');
-  const [query, setQuery] = useState('');
-  const [severity, setSeverity] = useState('All severities');
-  const [page, setPage] = useState('workspace');
-  const [url, setUrl] = useState('');
-  const [scanId, setScanId] = useState('');
-  const [scanState, setScanState] = useState('idle');
-  const [scanError, setScanError] = useState('');
+  const [activeId, setActiveId] = useState("");
+  const [expanded, setExpanded] = useState("");
+  const [query, setQuery] = useState("");
+  const [severity, setSeverity] = useState("All severities");
+  const [page, setPage] = useState("workspace");
+  const [url, setUrl] = useState("");
+  const [scanId, setScanId] = useState("");
+  const [crawlId, setCrawlId] = useState("");
+  const [crawlPages, setCrawlPages] = useState([]);
+  const [pageFilter, setPageFilter] = useState("");
+  const [selectedPageUrl, setSelectedPageUrl] = useState("");
+  const [crawlFormError, setCrawlFormError] = useState("");
+  const [crawlSubmitting, setCrawlSubmitting] = useState(false);
+  const [crawlMaxPages, setCrawlMaxPages] = useState(10);
+  const [scanState, setScanState] = useState("idle");
+  const [scanError, setScanError] = useState("");
+  const [scanStage, setScanStage] = useState("");
+  const [scanProgress, setScanProgress] = useState(0);
+  const [screenshot, setScreenshot] = useState("");
   const [demo, setDemo] = useState(true);
-  const [theme, setTheme] = useState('light');
-  const [mobileTab, setMobileTab] = useState('issues');
+  const [theme, setTheme] = useState("light");
+  const [mobileTab, setMobileTab] = useState("issues");
   const [showCrawl, setShowCrawl] = useState(false);
-  const [toast, setToast] = useState('');
-  const [filter, setFilter] = useState('All issues');
-  const [viewport, setViewport] = useState('desktop');
+  const [showCompare, setShowCompare] = useState(false);
+  const [toast, setToast] = useState("");
+  const [filter, setFilter] = useState("All issues");
+  const [viewport, setViewport] = useState("desktop");
 
   const iframe = useRef(null);
 
   const { scan: scanResult, error: statusError } = useScanStatus(scanId);
+  const { crawl: crawlResult, error: crawlStatusError } =
+    useCrawlStatus(crawlId);
 
   const active = issues.find((issue) => issue.id === activeId);
 
+  const previewPageUrl = active?.pageUrl || selectedPageUrl || url;
+
+  const previewPage = crawlPages.find((item) => item.url === previewPageUrl);
+
+  const previewScreenshots = crawlPages.length
+    ? {
+        desktop:
+          previewPage?.screenshots?.desktop || previewPage?.screenshot || "",
+        mobile:
+          previewPage?.screenshots?.mobile ||
+          previewPage?.screenshotMobile ||
+          "",
+      }
+    : {
+        desktop:
+          scanResult?.screenshots?.desktop ||
+          scanResult?.screenshot ||
+          screenshot ||
+          "",
+        mobile:
+          scanResult?.screenshots?.mobile || scanResult?.screenshotMobile || "",
+      };
+
+  const previewIssues = crawlPages.length
+    ? issues.filter((issue) => issue.pageUrl === previewPageUrl)
+    : issues;
+
   const visibleIssues = issues.filter(
     (issue) =>
-      (severity === 'All severities' ||
+      (severity === "All severities" ||
         issue.severity === severity.toLowerCase()) &&
-      (filter !== 'Open' || issue.status !== 'Ignored') &&
-      (filter !== 'Verified' || issue.status === 'Verified') &&
+      (filter !== "Open" || issue.status !== "Ignored") &&
+      (filter !== "Verified" || issue.status === "Verified") &&
+      (!pageFilter || issue.pageUrl === pageFilter) &&
       `${issue.title} ${issue.rule} ${issue.wcag}`
         .toLowerCase()
-        .includes(query.toLowerCase())
+        .includes(query.toLowerCase()),
   );
 
   useEffect(() => {
     if (!toast) return;
 
-    const timer = setTimeout(() => setToast(''), 2800);
+    const timer = setTimeout(() => setToast(""), 2800);
     return () => clearTimeout(timer);
   }, [toast]);
 
   useEffect(() => {
     if (!scanResult) return;
 
-    setScanState(scanResult.status || 'processing');
+    setScanState(scanResult.status || "processing");
+    setScanStage(scanResult.stage || "");
+    setScanProgress(scanResult.progress || 0);
+    if (scanResult.status === "failed")
+      setScanError(scanResult.error || "The website could not be scanned.");
 
-    if (scanResult.issues) {
+    if (scanResult.status === "completed" && Array.isArray(scanResult.issues)) {
       setIssues(scanResult.issues);
-      setActiveId(scanResult.issues[0]?.id || '');
+      setActiveId(scanResult.issues[0]?.id || "");
+      setExpanded(scanResult.issues[0]?.id || "");
+      setScreenshot(scanResult.screenshot || "");
     }
   }, [scanResult]);
 
   useEffect(() => {
     if (statusError) {
-      setScanState('failed');
+      setScanState("failed");
       setScanError(statusError);
     }
   }, [statusError]);
 
+  useEffect(() => {
+    if (!crawlResult) return;
+    const progress = crawlResult.progress || {};
+    setScanState(crawlResult.status);
+    setScanStage(
+      `Crawling: ${progress.completedPages || 0} completed, ${progress.failedPages || 0} failed, ${progress.skippedPages || 0} skipped`,
+    );
+    setScanProgress(
+      crawlResult.status === "completed"
+        ? 100
+        : Math.floor(
+            ((progress.completedPages + progress.failedPages || 0) /
+              crawlMaxPages) *
+              100,
+          ),
+    );
+    if (crawlResult.status === "failed")
+      setScanError(crawlResult.error || "No pages could be scanned.");
+    if (["completed", "failed"].includes(crawlResult.status)) {
+      const pages = crawlResult.pages || [];
+      setCrawlPages(pages);
+      setIssues(crawlResult.issues || []);
+      setActiveId(crawlResult.issues?.[0]?.id || "");
+      setExpanded(crawlResult.issues?.[0]?.id || "");
+      setSelectedPageUrl(
+        pages.find((item) => item.status === "completed")?.url || "",
+      );
+      setScreenshot(
+        pages.find((item) => item.status === "completed")?.screenshot || "",
+      );
+    }
+  }, [crawlResult, crawlMaxPages]);
+
+  useEffect(() => {
+    if (crawlStatusError) {
+      setScanState("failed");
+      setScanError(crawlStatusError);
+    }
+  }, [crawlStatusError]);
+
   async function startScan(event) {
     event?.preventDefault();
-    setScanError('');
+    setScanError("");
 
     let normalized;
 
     try {
       normalized = new URL(url).toString();
 
-      if (!['http:', 'https:'].includes(new URL(normalized).protocol)) {
+      if (!["http:", "https:"].includes(new URL(normalized).protocol)) {
         throw new Error();
       }
     } catch {
-      setScanError('Enter a valid website URL, including https://');
+      setScanError("Enter a valid website URL, including https://");
       return;
     }
 
-    setScanState('queued');
+    setScanState("queued");
     setDemo(false);
+    setIssues([]);
+    setActiveId("");
+    setExpanded("");
+    setScreenshot("");
+    setScanId("");
+    setScanStage("queued");
+    setScanProgress(0);
+    setCrawlId("");
+    setCrawlPages([]);
+    setPageFilter("");
+    setSelectedPageUrl("");
+    setQuery("");
+    setSeverity("All severities");
+    setFilter("All issues");
 
     try {
       const scan = await createScan(normalized);
 
       setScanId(scan.scanId);
-      setScanState(scan.status || 'queued');
+      setScanState(scan.status || "queued");
     } catch (error) {
-      setScanState('demo');
-      setDemo(true);
-      setIssues(demoIssues);
-      setActiveId(demoIssues[0].id);
-      setExpanded(demoIssues[0].id);
-
+      setScanState("failed");
       setScanError(
-        `Live scan unavailable: ${
-          error.userMessage ||
-          error.message ||
-          'API could not be reached'
-        }. Showing the clearly labeled sample audit.`
+        error.userMessage || error.message || "The scan could not be started.",
       );
     }
   }
 
+  async function startCrawl(config) {
+    setCrawlFormError("");
+    setCrawlSubmitting(true);
+    try {
+      const response = await createCrawl(config);
+      if (!response.crawlId)
+        throw new Error("The crawl API did not return a crawl ID.");
+      setCrawlMaxPages(config.maxPages);
+      setScanId("");
+      setCrawlId(response.crawlId);
+      setScanState(response.status || "queued");
+      setScanError("");
+      setScanStage("queued");
+      setScanProgress(0);
+      setDemo(false);
+      setIssues([]);
+      setActiveId("");
+      setExpanded("");
+      setCrawlPages([]);
+      setPageFilter("");
+      setSelectedPageUrl("");
+      setScreenshot("");
+      setQuery("");
+      setSeverity("All severities");
+      setFilter("All issues");
+      setShowCrawl(false);
+    } catch (error) {
+      setCrawlFormError(
+        error.userMessage || error.message || "The crawl could not be started.",
+      );
+    } finally {
+      setCrawlSubmitting(false);
+    }
+  }
+
   function toggleDecision(issue) {
-    const next =
-      issue.status === 'Ignored' ? 'Not tested' : 'Ignored';
+    const next = issue.status === "Ignored" ? "Not tested" : "Ignored";
 
     setIssues((items) =>
       items.map((item) =>
-        item.id === issue.id
-          ? { ...item, status: next }
-          : item
-      )
+        item.id === issue.id ? { ...item, status: next } : item,
+      ),
     );
   }
 
   async function copyFix(fix) {
     try {
       await navigator.clipboard.writeText(fix);
-      setToast('Suggested fix copied');
+      setToast("Remediation guidance copied");
     } catch {
-      setToast('Clipboard access is unavailable');
+      setToast("Clipboard access is unavailable");
     }
   }
 
   function exportCsv() {
     if (!issues.length) {
-      setToast('Run a scan before exporting a report');
+      setToast("Run a scan before exporting a report");
       return;
     }
 
     const rows = [
       [
-        'Issue',
-        'Severity',
-        'WCAG',
-        'Rule',
-        'Elements',
-        'Suggested fix',
+        "Page URL",
+        "Issue",
+        "Severity",
+        "WCAG",
+        "Rule",
+        "Elements",
+        "Remediation guidance",
       ],
       ...issues.map((issue) => [
+        issue.pageUrl || url,
         issue.title,
         issue.severity,
         issue.wcag,
@@ -385,20 +439,18 @@ export default function AuditDashboard() {
     const csv = rows
       .map((row) =>
         row
-          .map((value) =>
-            `"${String(value ?? '').replaceAll('"', '""')}"`
-          )
-          .join(',')
+          .map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`)
+          .join(","),
       )
-      .join('\n');
+      .join("\n");
 
     const objectUrl = URL.createObjectURL(
-      new Blob([csv], { type: 'text/csv' })
+      new Blob([csv], { type: "text/csv" }),
     );
 
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = objectUrl;
-    link.download = 'accesslens-audit.csv';
+    link.download = "accesslens-audit.csv";
     link.click();
 
     URL.revokeObjectURL(objectUrl);
@@ -407,7 +459,7 @@ export default function AuditDashboard() {
   return (
     <div
       className={`app-shell theme-${theme} min-h-screen bg-[#f7f7f5] font-['DM_Sans'] text-zinc-900 transition-colors duration-300 dark:bg-[#131312] dark:text-zinc-100 ${
-        theme === 'dark' ? 'dark' : ''
+        theme === "dark" ? "dark" : ""
       }`}
     >
       <Topbar
@@ -418,7 +470,7 @@ export default function AuditDashboard() {
         demo={demo}
       />
 
-      {page === 'workspace' ? (
+      {page === "workspace" ? (
         <main
           id="workspace"
           className="mx-auto max-w-[1510px] px-4 pb-10 pt-8 sm:px-6 sm:pt-10 lg:px-10"
@@ -430,8 +482,8 @@ export default function AuditDashboard() {
               </h1>
 
               <p className="mt-2.5 text-[13px] leading-relaxed text-zinc-500 dark:text-zinc-400 sm:text-[14px]">
-                Find accessibility barriers, inspect findings, and build
-                better web experiences.
+                Find accessibility barriers, inspect findings, and build better
+                web experiences.
               </p>
             </div>
 
@@ -439,29 +491,89 @@ export default function AuditDashboard() {
               <Clock3 size={16} className="text-orange-500" />
 
               <span>
-                {scanState === 'completed'
-                  ? 'Just scanned'
-                  : 'Ready to scan'}
+                {scanState === "completed" ? "Just scanned" : "Ready to scan"}
               </span>
             </div>
           </section>
 
           <div className="mb-5">
             <ScanForm
+              description={websiteDescription}
+              onDescriptionChange={setWebsiteDescription}
+              category={websiteCategory}
+              onCategoryChange={setWebsiteCategory}
               url={url}
               onUrlChange={setUrl}
               onSubmit={startScan}
               onCrawl={() => setShowCrawl(true)}
-              busy={['queued', 'processing', 'scanning'].includes(
-                scanState
-              )}
+              busy={["queued", "processing", "scanning"].includes(scanState)}
               demo={demo}
               state={scanState}
               error={scanError}
+              stage={scanStage}
+              progress={scanProgress}
+              mode={crawlId ? "crawl" : "scan"}
             />
           </div>
 
-          <SummaryCards issues={issues} />
+          <SummaryCards
+            issues={issues}
+            hasResults={
+              scanState === "completed" || (demo && issues.length > 0)
+            }
+          />
+
+          {crawlPages.length > 0 && (
+            <section
+              className="mt-6 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900"
+              aria-label="Crawl page results"
+            >
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-[16px] font-bold text-zinc-900 dark:text-zinc-100">
+                  Pages scanned
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setPageFilter("")}
+                  className="text-[11px] font-semibold text-orange-600 dark:text-orange-400"
+                >
+                  Show all findings
+                </button>
+              </div>
+              <div className="max-h-52 space-y-2 overflow-y-auto">
+                {crawlPages.map((item, index) => (
+                  <button
+                    key={`${item.url}-${index}`}
+                    type="button"
+                    onClick={() => {
+                      setPageFilter(item.url);
+                      setSelectedPageUrl(item.url);
+                      setActiveId(
+                        item.issues?.[0]
+                          ? issues.find((issue) => issue.pageUrl === item.url)
+                              ?.id || ""
+                          : "",
+                      );
+                    }}
+                    className={`flex w-full flex-wrap items-center gap-3 rounded-lg border px-3 py-2 text-left text-[11px] dark:text-zinc-300 ${pageFilter === item.url ? "border-orange-300 bg-orange-50 dark:border-orange-800 dark:bg-orange-500/10" : "border-zinc-200 dark:border-zinc-800"}`}
+                  >
+                    <span
+                      className="min-w-0 flex-1 truncate font-mono"
+                      title={item.url}
+                    >
+                      {item.url}
+                    </span>
+                    <span className="capitalize">{item.status}</span>
+                    <span>
+                      {item.status === "completed"
+                        ? `${item.summary?.total || 0} findings`
+                        : item.reason || item.error || ""}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
 
           <section className="mt-10">
             <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
@@ -478,8 +590,8 @@ export default function AuditDashboard() {
               <div className="flex items-center gap-3">
                 <div className="flex items-center rounded-xl border border-zinc-200 bg-zinc-100 p-1 md:hidden dark:border-zinc-700 dark:bg-zinc-800">
                   {[
-                    ['issues', 'Issues'],
-                    ['preview', 'Preview'],
+                    ["issues", "Issues"],
+                    ["preview", "Preview"],
                   ].map(([id, label]) => (
                     <button
                       key={id}
@@ -488,8 +600,8 @@ export default function AuditDashboard() {
                       aria-pressed={mobileTab === id}
                       className={`rounded-lg px-4 py-2 text-[11px] font-bold transition-all duration-200 ${
                         mobileTab === id
-                          ? 'bg-white text-orange-600 shadow-sm dark:bg-zinc-700 dark:text-orange-400'
-                          : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200'
+                          ? "bg-white text-orange-600 shadow-sm dark:bg-zinc-700 dark:text-orange-400"
+                          : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
                       }`}
                     >
                       {label}
@@ -506,7 +618,8 @@ export default function AuditDashboard() {
 
             <div className="grid min-w-0 grid-cols-1 items-start gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)]">
               <IssuePanel
-                className={mobileTab === 'preview' ? 'hidden md:flex' : ''}
+                websiteCategory={websiteCategory}
+                className={mobileTab === "preview" ? "hidden md:flex" : ""}
                 issues={issues}
                 visibleIssues={visibleIssues}
                 activeId={activeId}
@@ -517,51 +630,56 @@ export default function AuditDashboard() {
                 onStatusChange={setFilter}
                 severity={severity}
                 onSeverityChange={setSeverity}
-                onSort={() => setToast('Sorted by severity')}
+                onSort={() => setToast("Sorted by severity")}
                 onSelect={(issue, inspectOnly) => {
                   setActiveId(issue.id);
+                  if (issue.pageUrl) setSelectedPageUrl(issue.pageUrl);
 
                   if (!inspectOnly) {
-                    setExpanded(
-                      expanded === issue.id ? '' : issue.id
-                    );
+                    setExpanded(expanded === issue.id ? "" : issue.id);
                   }
                 }}
                 onCopy={copyFix}
                 onIgnore={toggleDecision}
                 onAction={setToast}
+                hasResults={scanState === "completed"}
               />
 
-              <WebsitePreview
-                className={mobileTab === 'issues' ? 'hidden md:flex' : ''}
-                iframeRef={iframe}
-                srcDoc={demoHtml}
-                demo={demo}
-                url={url}
-                selector={active?.selector}
-                active={active}
+              <WebsitePreviewScreenshot
+                className={mobileTab === "issues" ? "hidden md:flex" : ""}
+                screenshot={previewScreenshots.desktop}
+                screenshotMobile={previewScreenshots.mobile}
+                url={previewPageUrl}
+                issues={previewIssues}
+                activeId={activeId}
+                activeIssue={active}
                 viewport={viewport}
                 onViewportChange={setViewport}
+                onSelectIssue={(id) => {
+                  setActiveId(id);
+                  setExpanded(id);
+                  setMobileTab("issues");
+                }}
                 onRefresh={() => {
-                  if (iframe.current) {
-                    iframe.current.srcdoc = demoHtml;
+                  if (!url) {
+                    setToast("Enter a website URL first.");
+                    return;
                   }
 
-                  setToast('Preview refreshed');
+                  startScan();
                 }}
               />
             </div>
           </section>
 
+          <RoadmapPanel issues={issues} />
+
           <ReportActions
             onExport={exportCsv}
-            onCompare={() =>
-              setToast(
-                'Scan comparison is available once scan history is persisted by the API.'
-              )
-            }
-            onPullRequest={() => setPage('github')}
+            onCompare={() => setShowCompare(true)}
+            onPullRequest={() => setPage("github")}
           />
+          <ScanComparison currentScanId={scanId} currentUrl={url} open={showCompare} onClose={() => setShowCompare(false)} />
 
           <footer className="mt-9 flex flex-col gap-3 border-t border-zinc-200 pt-6 text-[11px] text-zinc-400 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800 dark:text-zinc-500">
             <span className="flex items-center gap-2 font-bold tracking-[0.04em]">
@@ -593,13 +711,13 @@ export default function AuditDashboard() {
         open={showCrawl}
         url={url}
         onUrlChange={setUrl}
-        onClose={() => setShowCrawl(false)}
-        onStart={() => {
+        onClose={() => {
           setShowCrawl(false);
-          setToast(
-            'Crawling is unavailable until the backend crawl endpoint is implemented.'
-          );
+          setCrawlFormError("");
         }}
+        onStart={startCrawl}
+        busy={crawlSubmitting}
+        error={crawlFormError}
       />
 
       {toast && (
@@ -616,7 +734,7 @@ export default function AuditDashboard() {
           <button
             type="button"
             aria-label="Dismiss notification"
-            onClick={() => setToast('')}
+            onClick={() => setToast("")}
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-700 dark:hover:text-zinc-200"
           >
             <X size={15} />
@@ -627,40 +745,30 @@ export default function AuditDashboard() {
   );
 }
 
-function AppPage({
-  page,
-  theme,
-  setTheme,
-  onToast,
-  onExport,
-  onNavigate,
-}) {
-  const [frequency, setFrequency] = useState('Weekly');
-  const [monitorUrl, setMonitorUrl] = useState('');
+function AppPage({ page, theme, setTheme, onToast, onExport, onNavigate }) {
+  const [frequency, setFrequency] = useState("Weekly");
+  const [monitorUrl, setMonitorUrl] = useState("");
   const [emailAlerts, setEmailAlerts] = useState(true);
-  const [repo, setRepo] = useState('');
+  const [repo, setRepo] = useState("");
 
   const title = {
-    history: 'Scan history',
-    monitoring: 'Monitoring',
-    github: 'GitHub integration',
-    reports: 'Reports',
-    docs: 'Documentation',
-    settings: 'Settings',
+    history: "Scan history",
+    monitoring: "Monitoring",
+    github: "GitHub integration",
+    reports: "Reports",
+    docs: "Documentation",
+    settings: "Settings",
   }[page];
 
   const descriptions = {
-    history: 'Review previous runs and compare accessibility changes.',
+    history: "Review previous runs and compare accessibility changes.",
     monitoring:
-      'Schedule recurring scans and get notified when new issues appear.',
+      "Schedule recurring scans and get notified when new issues appear.",
     github:
-      'Review proposed source changes and open pull requests with approval.',
-    reports:
-      'Export findings and remediation details for your team.',
-    docs:
-      'Learn how to use AccessLens and understand audit results.',
-    settings:
-      'Manage your workspace preferences and API connection.',
+      "Review proposed source changes and open pull requests with approval.",
+    reports: "Export findings and remediation details for your team.",
+    docs: "Learn how to use AccessLens and understand audit results.",
+    settings: "Manage your workspace preferences and API connection.",
   };
 
   const icons = {
@@ -670,11 +778,11 @@ function AppPage({
     settings: Settings2,
   };
 
-  if (page === 'monitoring') {
-    return <MonitoringPanel />;
+  if (page === "monitoring") {
+    return <MonitoringPanelConnected />;
   }
 
-  if (page === 'github') {
+  if (page === "github") {
     return <GitHubIntegration />;
   }
 
@@ -687,7 +795,7 @@ function AppPage({
         onNavigate={onNavigate}
       />
 
-      {page === 'history' && (
+      {page === "history" && (
         <section className={cardStyle}>
           <div className="flex flex-wrap items-start justify-between gap-4 border-b border-zinc-100 px-6 py-6 sm:px-8 dark:border-zinc-800">
             <div>
@@ -713,9 +821,9 @@ function AppPage({
             </h3>
 
             <p className="mt-3 max-w-[440px] text-[12px] leading-7 text-zinc-500 dark:text-zinc-400">
-              The current backend does not expose scan history.
-              Completed runs will appear here when persistence
-              and a history endpoint are connected.
+              The current backend does not expose scan history. Completed runs
+              will appear here when persistence and a history endpoint are
+              connected.
             </p>
 
             <code className="mt-5 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-2.5 font-mono text-[11px] text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
@@ -725,7 +833,7 @@ function AppPage({
         </section>
       )}
 
-      {page === 'reports' && (
+      {page === "reports" && (
         <>
           <section className={cardStyle}>
             <div className="flex flex-wrap items-start justify-between gap-4 border-b border-zinc-100 px-6 py-6 sm:px-8 dark:border-zinc-800">
@@ -735,8 +843,8 @@ function AppPage({
                 </h2>
 
                 <p className="mt-2 max-w-[640px] text-[12px] leading-relaxed text-zinc-500 dark:text-zinc-400">
-                  Download findings with severity, WCAG references,
-                  selectors, and remediation suggestions.
+                  Download findings with severity, WCAG references, selectors,
+                  and remediation suggestions.
                 </p>
               </div>
 
@@ -770,9 +878,9 @@ function AppPage({
               </div>
 
               <p className="mt-5 text-[11px] leading-7 text-zinc-500 dark:text-zinc-400">
-                PDF export and saved report history require report
-                generation support from the backend. Automated results
-                do not establish WCAG conformance.
+                PDF export and saved report history require report generation
+                support from the backend. Automated results do not establish
+                WCAG conformance.
               </p>
             </div>
           </section>
@@ -784,12 +892,12 @@ function AppPage({
 
             <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {[
-                'Issue title and rule ID',
-                'Severity and affected node count',
-                'WCAG criterion',
-                'Affected selector and snippet',
-                'Suggested remediation',
-                'Verification state',
+                "Issue title and rule ID",
+                "Severity and affected node count",
+                "WCAG criterion",
+                "Affected selector and snippet",
+                "Suggested remediation",
+                "Verification state",
               ].map((field) => (
                 <div
                   key={field}
@@ -807,7 +915,7 @@ function AppPage({
         </>
       )}
 
-      {page === 'docs' && (
+      {page === "docs" && (
         <>
           <section className={`${cardStyle} p-7 sm:p-9`}>
             <Badge tone="orange">QUICK GUIDE</Badge>
@@ -817,16 +925,16 @@ function AppPage({
             </h2>
 
             <p className="mt-3 max-w-[720px] text-[13px] leading-[1.9] text-zinc-500 dark:text-zinc-400">
-              AccessLens combines automated checks with a review
-              workflow. Treat every result as a finding to
-              investigate, not a compliance verdict.
+              AccessLens combines automated checks with a review workflow. Treat
+              every result as a finding to investigate, not a compliance
+              verdict.
             </p>
 
             <button
               type="button"
               onClick={() =>
                 onToast(
-                  'Return to Workspace from the top navigation to start an audit.'
+                  "Return to Workspace from the top navigation to start an audit.",
                 )
               }
               className={`${primaryButton} mt-6`}
@@ -839,31 +947,31 @@ function AppPage({
           <div className="grid gap-5 sm:grid-cols-2">
             {[
               {
-                number: '01',
-                title: 'Run a scan',
+                number: "01",
+                title: "Run a scan",
                 description:
-                  'Enter an HTTP or HTTPS website URL and choose Scan website. The app reports the job state returned by the scan API.',
+                  "Enter an HTTP or HTTPS website URL and choose Scan website. The app reports the job state returned by the scan API.",
                 icon: Globe2,
               },
               {
-                number: '02',
-                title: 'Inspect findings',
+                number: "02",
+                title: "Inspect findings",
                 description:
-                  'Filter by severity, open an issue to review its rule and selector, then select it to locate the matching node in the controlled sample preview.',
+                  "Filter by severity, open an issue to review its rule and selector, then select it to locate the matching node in the controlled sample preview.",
                 icon: Activity,
               },
               {
-                number: '03',
-                title: 'Review remediations',
+                number: "03",
+                title: "Review remediations",
                 description:
-                  'Suggested changes are proposals. Copying a suggestion does not change the target site. Verify changes in an isolated environment before shipping.',
+                  "Suggested changes are proposals. Copying a suggestion does not change the target site. Verify changes in an isolated environment before shipping.",
                 icon: Code2,
               },
               {
-                number: '04',
-                title: 'Understand the limits',
+                number: "04",
+                title: "Understand the limits",
                 description:
-                  'Automated checks catch common issues, but many accessibility requirements need human review. A clean scan is not proof of WCAG conformance.',
+                  "Automated checks catch common issues, but many accessibility requirements need human review. A clean scan is not proof of WCAG conformance.",
                 icon: ShieldCheck,
               },
             ].map((item) => {
@@ -903,10 +1011,10 @@ function AppPage({
 
             <div className="mt-6 divide-y divide-zinc-100 dark:divide-zinc-800">
               {[
-                ['POST /api/scans', 'Submit scan'],
-                ['GET /api/scans/:id', 'Read scan status'],
-                ['POST /api/crawls', 'Not implemented'],
-                ['POST /api/fixes/:id/verify', 'Not implemented'],
+                ["POST /api/scans", "Submit scan"],
+                ["GET /api/scans/:id", "Read scan status"],
+                ["POST /api/crawls", "Not implemented"],
+                ["POST /api/fixes/:id/verify", "Not implemented"],
               ].map(([endpoint, description]) => (
                 <div
                   key={endpoint}
@@ -926,7 +1034,7 @@ function AppPage({
         </>
       )}
 
-      {page === 'settings' && (
+      {page === "settings" && (
         <>
           <section className={cardStyle}>
             <div className="border-b border-zinc-100 px-6 py-6 sm:px-8 dark:border-zinc-800">
@@ -952,8 +1060,8 @@ function AppPage({
 
               <div className="inline-flex w-fit items-center gap-1 rounded-xl border border-zinc-200 bg-zinc-100 p-1 dark:border-zinc-700 dark:bg-zinc-800">
                 {[
-                  ['light', 'Light', Sun],
-                  ['dark', 'Dark', Moon],
+                  ["light", "Light", Sun],
+                  ["dark", "Dark", Moon],
                 ].map(([value, label, Icon]) => (
                   <button
                     key={value}
@@ -962,8 +1070,8 @@ function AppPage({
                     aria-pressed={theme === value}
                     className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-[11px] font-bold transition-all duration-200 ${
                       theme === value
-                        ? 'bg-white text-orange-600 shadow-sm dark:bg-zinc-700 dark:text-orange-400'
-                        : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200'
+                        ? "bg-white text-orange-600 shadow-sm dark:bg-zinc-700 dark:text-orange-400"
+                        : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
                     }`}
                   >
                     <Icon size={16} />
@@ -997,18 +1105,17 @@ function AppPage({
 
                 <code className="break-all rounded-lg border border-zinc-200 bg-white px-3 py-2 font-mono text-[11px] text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
                   {import.meta.env.VITE_API_BASE_URL ||
-                    'http://localhost:5000'}
+                    "Same origin (Vite /api proxy → localhost:5001)"}
                 </code>
               </div>
 
               <p className="mt-5 text-[11px] leading-[1.9] text-zinc-500 dark:text-zinc-400">
-                Set{' '}
+                Set{" "}
                 <code className="rounded bg-zinc-100 px-1.5 py-1 font-mono dark:bg-zinc-800">
                   VITE_API_BASE_URL
-                </code>{' '}
-                in the frontend environment to connect a different API.
-                Never put private keys or server credentials in Vite
-                variables.
+                </code>{" "}
+                in the frontend environment to connect a different API. Never
+                put private keys or server credentials in Vite variables.
               </p>
             </div>
           </section>
@@ -1025,9 +1132,9 @@ function AppPage({
                 </h2>
 
                 <p className="mt-2 text-[12px] leading-[1.9] text-zinc-500 dark:text-zinc-400">
-                  The score shown in the workspace is a project-defined
-                  estimate based on issue severity and affected element
-                  counts. It is not an official accessibility rating.
+                  The score shown in the workspace is a project-defined estimate
+                  based on issue severity and affected element counts. It is not
+                  an official accessibility rating.
                 </p>
               </div>
             </div>
@@ -1037,3 +1144,5 @@ function AppPage({
     </div>
   );
 }
+
+// Voice/categories helpers could be added; minimal implementation
