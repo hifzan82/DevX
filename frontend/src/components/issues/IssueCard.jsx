@@ -1,12 +1,13 @@
 
 import { ChevronRight, AlertCircle, Layers3 } from 'lucide-react';
-import CodeFixPanel from './CodeFixPanel.jsx';
+import CodeFixPanelEnhanced from './CodeFixPanelEnhanced.jsx';
 
 export default function IssueCard({
   issue,
   index,
   selected,
   expanded,
+  websiteCategory = 'General',
   onSelect,
   onInspect,
   onCopy,
@@ -126,12 +127,14 @@ export default function IssueCard({
 
       {expanded && (
         <div className="animate-in fade-in slide-in-from-top-1 duration-200">
-          <CodeFixPanel
+          <CodeFixPanelEnhanced
             issue={issue}
+            websiteCategory={websiteCategory}
             onInspect={onInspect}
             onCopy={onCopy}
             onAction={onAction}
             onIgnore={onIgnore}
+            onToast={onAction}
           />
         </div>
       )}
