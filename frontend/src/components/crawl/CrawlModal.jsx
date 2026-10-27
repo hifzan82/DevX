@@ -1,13 +1,19 @@
 
-import { AlertTriangle, Layers3, Play, X, Globe2, ArrowRight, Info } from 'lucide-react';
+import { useState } from 'react';
+import { AlertTriangle, Layers3, Play, X, Globe2, ArrowRight } from 'lucide-react';
 
 export default function CrawlModal({
   open,
   url,
   onUrlChange,
   onClose,
-  onStart
+  onStart,
+  busy = false,
+  error = '',
 }) {
+  const [maxPages, setMaxPages] = useState(10);
+  const [maxDepth, setMaxDepth] = useState(2);
+  const [sameOrigin, setSameOrigin] = useState(true);
   if (!open) return null;
 
   return (
@@ -54,7 +60,10 @@ export default function CrawlModal({
             </p>
           </div>
 
-          <div className="space-y-5">
+          <form id="crawl-form" className="space-y-5" onSubmit={(event) => {
+            event.preventDefault();
+            onStart({ url, maxPages: Number(maxPages), maxDepth: Number(maxDepth), sameOrigin });
+          }}>
             <div>
               <label
                 htmlFor="crawl-url"
@@ -72,6 +81,7 @@ export default function CrawlModal({
                 <input
                   id="crawl-url"
                   type="url"
+                  required
                   value={url}
                   onChange={(e) => onUrlChange(e.target.value)}
                   placeholder="https://example.com"
@@ -94,13 +104,15 @@ export default function CrawlModal({
                   id="crawl-max-pages"
                   type="number"
                   min="1"
-                  max="100"
-                  defaultValue="20"
+                  max="20"
+                  required
+                  value={maxPages}
+                  onChange={(event) => setMaxPages(event.target.value)}
                   className="h-[49px] w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-4 text-[13px] font-semibold text-zinc-800 outline-none transition-all duration-200 hover:border-zinc-300 focus:border-orange-400 focus:bg-white focus:ring-4 focus:ring-orange-500/10 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-100"
                 />
 
                 <p className="mt-2 text-[11px] text-zinc-400">
-                  Up to 100 pages per crawl
+                  Up to 20 pages per crawl
                 </p>
               </div>
 
@@ -116,8 +128,10 @@ export default function CrawlModal({
                   id="crawl-max-depth"
                   type="number"
                   min="0"
-                  max="10"
-                  defaultValue="3"
+                  max="3"
+                  required
+                  value={maxDepth}
+                  onChange={(event) => setMaxDepth(event.target.value)}
                   className="h-[49px] w-full rounded-xl border border-zinc-200 bg-zinc-50/50 px-4 text-[13px] font-semibold text-zinc-800 outline-none transition-all duration-200 hover:border-zinc-300 focus:border-orange-400 focus:bg-white focus:ring-4 focus:ring-orange-500/10 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-100"
                 />
 
@@ -135,18 +149,19 @@ export default function CrawlModal({
 
                 <div>
                   <span className="block text-[12px] font-bold text-zinc-800 dark:text-zinc-200">
-                    Stay on starting domain
+                    Stay on starting origin
                   </span>
 
                   <span className="mt-1 block text-[11px] text-zinc-500 dark:text-zinc-400">
-                    Restrict scanning to the same website
+                    Restrict scanning to the same scheme, host, and port
                   </span>
                 </div>
               </div>
 
               <input
                 type="checkbox"
-                defaultChecked
+                checked={sameOrigin}
+                onChange={(event) => setSameOrigin(event.target.checked)}
                 className="h-[18px] w-[18px] shrink-0 cursor-pointer rounded-md border-zinc-300 accent-orange-600 focus:ring-orange-500 dark:border-zinc-600"
               />
             </label>
@@ -159,19 +174,16 @@ export default function CrawlModal({
 
               <div className="min-w-0">
                 <div className="text-[12px] font-bold text-amber-900 dark:text-amber-300">
-                  Backend integration required
+                  Crawl scope
                 </div>
 
                 <p className="mt-1.5 text-[11px] leading-[1.7] text-amber-800/80 dark:text-amber-200/70">
-                  Multi-page crawling requires the{' '}
-                  <code className="rounded bg-amber-100/80 px-1.5 py-0.5 font-mono text-[10px] dark:bg-amber-900/40">
-                    POST /api/crawls
-                  </code>{' '}
-                  endpoint, which is not currently available.
+                  Public pages only. Links are followed up to the selected limits; pages that block automated access are reported as failed.
                 </p>
               </div>
             </div>
-          </div>
+            {error && <p role="alert" className="text-[12px] font-medium text-red-700 dark:text-red-400">{error}</p>}
+          </form>
         </div>
 
         <div className="flex flex-col-reverse items-center justify-end gap-3 border-t border-zinc-100 bg-zinc-50/70 px-7 py-5 sm:flex-row sm:px-8 dark:border-zinc-800 dark:bg-zinc-900">
@@ -184,12 +196,13 @@ export default function CrawlModal({
           </button>
 
           <button
-            type="button"
-            onClick={onStart}
+            type="submit"
+            form="crawl-form"
+            disabled={busy}
             className="group flex h-[45px] w-full items-center justify-center gap-2.5 rounded-xl bg-zinc-900 px-6 text-[12px] font-bold text-white shadow-[0_4px_14px_rgba(0,0,0,0.15)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-[0_8px_22px_rgba(0,0,0,0.2)] active:scale-[0.98] sm:w-auto dark:bg-orange-600 dark:hover:bg-orange-500"
           >
             <Play size={15} fill="currentColor" />
-            Start crawl
+            {busy ? 'Starting...' : 'Start crawl'}
             <ArrowRight
               size={15}
               className="transition-transform duration-200 group-hover:translate-x-1"
