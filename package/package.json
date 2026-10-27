@@ -1,0 +1,17 @@
+{
+  "name": "@accesslens/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "accesslens": "./bin/accesslens.js"
+  },
+  "main": "./src/index.js",
+  "files": ["bin", "src"],
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "axe-core": "^4.10.0",
+    "puppeteer": "^23.0.0"
+  }
+}
