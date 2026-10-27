@@ -1,0 +1,6 @@
+import { ChevronDown, Globe2, Link2, Play, X } from 'lucide-react';
+import ScanProgress from './ScanProgress.jsx';
+
+export default function ScanForm({ url, onUrlChange, onSubmit, onCrawl, busy, demo, state, error }) {
+  return <section className="scan-card"><div className="scan-card-heading"><div className="scan-title-icon"><Globe2 size={17}/></div><div><strong>Start a website audit</strong><span>Enter a public URL to inspect its accessibility.</span></div><span className={`badge ${demo?'badge-orange':'badge-neutral'}`}>{demo?'SAMPLE DATA':'API CONNECTED'}</span></div><form className="scan-form" onSubmit={onSubmit}><div className="url-field"><Link2 size={17}/><input aria-label="Website URL" value={url} onChange={e=>onUrlChange(e.target.value)} placeholder="https://example.com" type="url"/><button type="button" className="clear-url" aria-label="Clear URL" onClick={()=>onUrlChange('')}><X size={14}/></button></div><button className="button-primary" type="submit" disabled={busy}><Play size={15} fill="currentColor"/>{busy?'Scanning…':'Scan website'}</button><button className="button-secondary" type="button" onClick={onCrawl}><Globe2 size={15}/> Scan all pages <ChevronDown size={14}/></button></form><ScanProgress state={state} error={error} demo={demo}/></section>;
+}
