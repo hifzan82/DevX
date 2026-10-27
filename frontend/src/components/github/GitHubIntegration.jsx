@@ -1,0 +1,10 @@
+import { useState } from 'react';
+import { AlertTriangle,Github,RefreshCw } from 'lucide-react';
+import { listRepositories } from '../../services/githubService.js';
+import PullRequestReview from './PullRequestReview.jsx';
+
+export default function GitHubIntegration() {
+  const [repositories,setRepositories]=useState([]);const [selected,setSelected]=useState('');const [error,setError]=useState('');const [loading,setLoading]=useState(false);
+  async function connect(){setLoading(true);try{const result=await listRepositories();setRepositories(Array.isArray(result)?result:(result.repositories||[]));setError('')}catch(e){setError(e.userMessage||e.message||'GitHub is not connected.')}finally{setLoading(false)}}
+  return <><section className="intro-row"><div><div className="eyebrow"><span className="eyebrow-line"/> ACCESSLENS <span className="eyebrow-dot">/</span> GITHUB</div><h1>GitHub integration</h1><p>Prepare reviewed accessibility fixes for a connected repository.</p></div><span className="badge badge-orange">{repositories.length?'CONNECTED':'DISCONNECTED'}</span></section><section className="page-card"><div className="github-callout"><div className="github-icon"><Github size={24}/></div><div><h3>Connect an authorized repository</h3><p>Repository access requires server-side GitHub App configuration. Tokens are never stored in this browser.</p><button className="button-primary" onClick={connect} disabled={loading}><RefreshCw size={14}/>{loading?'Loading repositories':'Load repositories'}</button></div></div>{error&&<div className="inline-message"><AlertTriangle size={14}/>{error}</div>}<label className="form-label repo-select">Repository<select value={selected} onChange={e=>setSelected(e.target.value)}><option value="">Select a repository</option>{repositories.map(repo=><option key={repo.id||repo.full_name} value={repo.full_name||repo.name}>{repo.full_name||repo.name}</option>)}</select></label></section><PullRequestReview repository={selected} onCreate={()=>setError('No approved patches are available.')} onApprove={()=>{}} onReject={()=>{}}/></>;
+}
