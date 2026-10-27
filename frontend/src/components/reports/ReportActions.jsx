@@ -30,8 +30,8 @@ export default function ReportActions({
         'bg-orange-50 text-orange-600 border-orange-100 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-900/40',
     },
     {
-      title: 'Review fixes & create PR',
-      description: 'Review changes before sharing',
+      title: 'GitHub repositories',
+      description: 'Browse authorized repositories',
       icon: Github,
       onClick: onPullRequest,
       iconStyle:
