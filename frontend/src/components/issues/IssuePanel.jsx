@@ -7,6 +7,7 @@ export default function IssuePanel({
   className = '',
   issues = [],
   visibleIssues = [],
+  websiteCategory = 'General',
   activeId,
   expanded,
   query,
@@ -20,6 +21,7 @@ export default function IssuePanel({
   onCopy,
   onIgnore,
   onAction,
+  hasResults = false,
 }) {
   const severityCounts = [
     {
@@ -105,6 +107,7 @@ export default function IssuePanel({
                 index={index}
                 selected={activeId === issue.id}
                 expanded={expanded === issue.id}
+                websiteCategory={websiteCategory}
                 onSelect={() => onSelect(issue)}
                 onInspect={() => onSelect(issue, true)}
                 onCopy={() => onCopy(issue.fix)}
@@ -132,13 +135,13 @@ export default function IssuePanel({
             <h3 className="mt-5 text-[15px] font-bold tracking-tight text-zinc-800 dark:text-zinc-200">
               {issues.length
                 ? 'No matching issues'
-                : 'No scan results yet'}
+                : hasResults ? 'No automated violations found' : 'No scan results yet'}
             </h3>
 
             <p className="mt-2 max-w-[270px] text-[12px] leading-6 text-zinc-500 dark:text-zinc-400">
               {issues.length
                 ? 'No findings match your current filters. Try adjusting your search or filter options.'
-                : 'Run an accessibility audit to discover and review issues across your website.'}
+                : hasResults ? 'Automated checks found no violations. Manual review is still needed.' : 'Run an accessibility audit to discover and review issues across your website.'}
             </p>
 
             {issues.length > 0 && (
