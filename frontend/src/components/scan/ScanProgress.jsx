@@ -8,7 +8,7 @@ import {
   Info,
 } from 'lucide-react';
 
-export default function ScanProgress({ state, error, demo }) {
+export default function ScanProgress({ state, error, stage, progress = 0, mode = 'scan' }) {
   if (state === 'idle' && !error) return null;
 
   const pending = ['queued', 'processing', 'scanning'].includes(state);
@@ -18,7 +18,7 @@ export default function ScanProgress({ state, error, demo }) {
 
   const statusConfig = {
     queued: {
-      label: 'Scan queued',
+      label: mode === 'crawl' ? 'Crawl queued' : 'Scan queued',
       description: 'Your scan is waiting to be processed.',
       icon: Clock3,
       color: 'text-blue-600 dark:text-blue-400',
@@ -27,7 +27,7 @@ export default function ScanProgress({ state, error, demo }) {
       dot: 'bg-blue-500',
     },
     processing: {
-      label: 'Processing scan',
+      label: mode === 'crawl' ? 'Crawling pages' : 'Processing scan',
       description: 'Analyzing your website for accessibility issues.',
       icon: Activity,
       color: 'text-blue-600 dark:text-blue-400',
@@ -45,8 +45,8 @@ export default function ScanProgress({ state, error, demo }) {
       dot: 'bg-orange-500',
     },
     completed: {
-      label: 'Scan completed',
-      description: 'Your accessibility audit has finished successfully.',
+      label: mode === 'crawl' ? 'Crawl completed' : 'Scan completed',
+      description: mode === 'crawl' ? stage : 'Your accessibility audit has finished successfully.',
       icon: CheckCircle2,
       color: 'text-emerald-600 dark:text-emerald-400',
       background: 'bg-emerald-50 dark:bg-emerald-500/10',
@@ -54,7 +54,7 @@ export default function ScanProgress({ state, error, demo }) {
       dot: 'bg-emerald-500',
     },
     failed: {
-      label: 'Scan failed',
+      label: mode === 'crawl' ? 'Crawl failed' : 'Scan failed',
       description: error || 'The scan could not be completed.',
       icon: AlertTriangle,
       color: 'text-red-600 dark:text-red-400',
@@ -134,7 +134,7 @@ export default function ScanProgress({ state, error, demo }) {
             </div>
 
             <p className="mt-1.5 text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-400">
-              {config.description}
+              {pending && stage ? `${stage.replaceAll('-', ' ')} · ${progress}%` : config.description}
             </p>
           </div>
 
@@ -159,7 +159,7 @@ export default function ScanProgress({ state, error, demo }) {
 
       {pending && (
         <div className="h-[3px] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
-          <div className="h-full w-1/3 animate-pulse rounded-full bg-orange-500" />
+          <div className="h-full rounded-full bg-orange-500 transition-[width] duration-500" style={{ width: `${Math.max(2, Math.min(95, progress))}%` }} />
         </div>
       )}
 
