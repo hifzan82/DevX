@@ -1,4 +1,4 @@
 # DevX
-Web accessibilty auditor + AI code suggestor
+Web accessibilty auditor +  Fix-Suggester
 
 Hello
