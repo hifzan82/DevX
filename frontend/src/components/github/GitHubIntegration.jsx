@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState } from "react";
 import {
   AlertTriangle,
   Github,
@@ -11,14 +10,14 @@ import {
   CheckCircle2,
   ArrowUpRight,
   GitBranch,
-} from 'lucide-react';
-import { listRepositories } from '../../services/githubService.js';
-import PullRequestReview from './PullRequestReview.jsx';
+} from "lucide-react";
+import { listRepositories } from "../../services/githubService.js";
+import PullRequestReview from "./PullRequestReview.jsx";
 
 export default function GitHubIntegration() {
   const [repositories, setRepositories] = useState([]);
-  const [selected, setSelected] = useState('');
-  const [error, setError] = useState('');
+  const [selected, setSelected] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function connect() {
@@ -27,13 +26,13 @@ export default function GitHubIntegration() {
     try {
       const result = await listRepositories();
       setRepositories(
-        Array.isArray(result) ? result : result.repositories || []
+        Array.isArray(result)
+          ? result
+          : result.repos || result.repositories || [],
       );
-      setError('');
+      setError("");
     } catch (e) {
-      setError(
-        e.userMessage || e.message || 'GitHub is not connected.'
-      );
+      setError(e.userMessage || e.message || "GitHub is not connected.");
     } finally {
       setLoading(false);
     }
@@ -56,16 +55,16 @@ export default function GitHubIntegration() {
         <div
           className={`inline-flex w-fit items-center gap-2 rounded-full border px-3.5 py-2 text-[11px] font-bold ${
             repositories.length
-              ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-400'
-              : 'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900 dark:bg-orange-950/30 dark:text-orange-400'
+              ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-400"
+              : "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900 dark:bg-orange-950/30 dark:text-orange-400"
           }`}
         >
           <span
             className={`h-2 w-2 rounded-full ${
-              repositories.length ? 'bg-emerald-500' : 'bg-orange-500'
+              repositories.length ? "bg-emerald-500" : "bg-orange-500"
             }`}
           />
-          {repositories.length ? 'CONNECTED' : 'DISCONNECTED'}
+          {repositories.length ? "CONNECTED" : "DISCONNECTED"}
         </div>
       </section>
 
@@ -81,9 +80,9 @@ export default function GitHubIntegration() {
             </h2>
 
             <p className="mt-2 max-w-[620px] text-[12px] leading-[1.8] text-zinc-500 dark:text-zinc-400">
-              Connect your GitHub repositories to review proposed
-              accessibility changes and prepare pull requests. Repository
-              access requires server-side GitHub App configuration.
+              Load repositories available to the server-side GitHub token for
+              local review. Pull request creation requires an approved patch
+              workflow and is currently unavailable.
             </p>
 
             <button
@@ -94,9 +93,13 @@ export default function GitHubIntegration() {
             >
               <RefreshCw
                 size={16}
-                className={loading ? 'animate-spin' : 'transition-transform duration-500 group-hover:rotate-45'}
+                className={
+                  loading
+                    ? "animate-spin"
+                    : "transition-transform duration-500 group-hover:rotate-45"
+                }
               />
-              {loading ? 'Loading repositories...' : 'Load repositories'}
+              {loading ? "Loading repositories..." : "Load repositories"}
             </button>
           </div>
         </div>
@@ -245,9 +248,7 @@ export default function GitHubIntegration() {
         <div className="p-5 sm:p-7">
           <PullRequestReview
             repository={selected}
-            onCreate={() =>
-              setError('No approved patches are available.')
-            }
+            onCreate={() => setError("No approved patches are available.")}
             onApprove={() => {}}
             onReject={() => {}}
           />
