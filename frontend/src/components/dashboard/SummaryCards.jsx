@@ -8,7 +8,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 
-export default function SummaryCards({ issues = [] }) {
+export default function SummaryCards({ issues = [], hasResults = false }) {
   const total = issues
     .filter((i) => i.status !== 'Ignored')
     .reduce((n, i) => n + (Number(i.count) || 0), 0);
@@ -21,7 +21,7 @@ export default function SummaryCards({ issues = [] }) {
     .filter((i) => i.status === 'Verified')
     .reduce((n, i) => n + (Number(i.count) || 0), 0);
 
-  const score = issues.length
+  const score = hasResults
     ? Math.max(
         0,
         100 -
@@ -56,8 +56,8 @@ export default function SummaryCards({ issues = [] }) {
     },
     {
       label: 'Total Issues',
-      value: issues.length ? total : '—',
-      description: issues.length
+      value: hasResults ? total : '—',
+      description: hasResults
         ? 'Across all accessibility rules'
         : 'Awaiting first scan',
       icon: AlertTriangle,
@@ -66,8 +66,8 @@ export default function SummaryCards({ issues = [] }) {
     },
     {
       label: 'Critical Issues',
-      value: issues.length ? critical : '—',
-      description: issues.length
+      value: hasResults ? critical : '—',
+      description: hasResults
         ? 'Require immediate attention'
         : 'Awaiting first scan',
       icon: AlertTriangle,
@@ -76,8 +76,8 @@ export default function SummaryCards({ issues = [] }) {
     },
     {
       label: 'Verified Fixes',
-      value: issues.length ? verified : '—',
-      suffix: issues.length ? `/ ${total}` : '',
+      value: hasResults ? verified : '—',
+      suffix: hasResults ? `/ ${total}` : '',
       description: 'Verification requires an actual recheck',
       icon: ShieldCheck,
       iconColor: 'text-emerald-600',
