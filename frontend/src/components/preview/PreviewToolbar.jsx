@@ -16,6 +16,7 @@ export default function PreviewToolbar({
   active,
   onRefresh,
   onViewportChange,
+  screenshot,
 }) {
   const changeViewport = (next) => {
     onViewportChange?.(next === viewport ? 'desktop' : next);
@@ -33,7 +34,7 @@ export default function PreviewToolbar({
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2.5">
                 <h2 className="text-[16px] font-extrabold tracking-[-0.5px] text-zinc-900 dark:text-zinc-100">
-                  Live preview
+                  Website preview
                 </h2>
 
                 <span className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-[9px] font-bold tracking-[0.025em] text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
@@ -42,7 +43,7 @@ export default function PreviewToolbar({
                       demo ? 'bg-orange-500' : 'bg-emerald-500'
                     }`}
                   />
-                  {demo ? 'DEMO PAGE' : 'CONTROLLED PREVIEW'}
+                  {demo ? 'DEMO PAGE' : screenshot ? 'SCAN SCREENSHOT' : 'PREVIEW PENDING'}
                 </span>
               </div>
 
@@ -115,8 +116,9 @@ export default function PreviewToolbar({
             type="button"
             aria-label="Open preview in new window"
             title="Open preview in new window"
-            onClick={() => window.open('about:blank', '_blank', 'noopener')}
-            className="group flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-500 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 active:scale-95 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:border-orange-800 dark:hover:bg-orange-500/10 dark:hover:text-orange-400"
+            onClick={() => { if (url && screenshot) window.open(url, '_blank', 'noopener,noreferrer'); }}
+            disabled={!url || !screenshot}
+            className="group flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-500 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:border-orange-800 dark:hover:bg-orange-500/10 dark:hover:text-orange-400"
           >
             <ExternalLink size={16} />
           </button>
