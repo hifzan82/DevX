@@ -1,6 +1,36 @@
-import api from './api.js';
+import api from "./api.js";
 
-export async function listMonitors() { return (await api.get('/api/monitors')).data; }
-export async function createMonitor(config) { return (await api.post('/api/monitors', config)).data; }
-export async function updateMonitor(monitorId, changes) { return (await api.patch(`/api/monitors/${encodeURIComponent(monitorId)}`, changes)).data; }
-export async function deleteMonitor(monitorId) { return (await api.delete(`/api/monitors/${encodeURIComponent(monitorId)}`)).data; }
+const BASE = "/api/monitors";
+
+export async function listMonitors() {
+  const { data } = await api.get(BASE);
+  return data;
+}
+
+export async function createMonitor(payload) {
+  const { data } = await api.post(BASE, payload);
+  return data;
+}
+
+export async function getMonitor(id) {
+  const { data } = await api.get(`${BASE}/${encodeURIComponent(id)}`);
+  return data;
+}
+
+export async function updateMonitor(id, updates) {
+  const { data } = await api.patch(
+    `${BASE}/${encodeURIComponent(id)}`,
+    updates,
+  );
+  return data;
+}
+
+export async function deleteMonitor(id) {
+  const { data } = await api.delete(`${BASE}/${encodeURIComponent(id)}`);
+  return data;
+}
+
+export async function runMonitorNow(id) {
+  const { data } = await api.post(`${BASE}/${encodeURIComponent(id)}/run`);
+  return data;
+}
