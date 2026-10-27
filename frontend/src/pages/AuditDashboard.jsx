@@ -1,10 +1,9 @@
+
 import { useEffect, useRef, useState } from 'react';
 import Topbar from '../components/layout/Topbar.jsx';
 import ScanForm from '../components/scan/ScanForm.jsx';
 import SummaryCards from '../components/dashboard/SummaryCards.jsx';
-import IssueCard from '../components/issues/IssueCard.jsx';
 import IssuePanel from '../components/issues/IssuePanel.jsx';
-import IssueHighlight from '../components/preview/IssueHighlight.jsx';
 import CrawlModal from '../components/crawl/CrawlModal.jsx';
 import WebsitePreview from '../components/preview/WebsitePreview.jsx';
 import ReportActions from '../components/reports/ReportActions.jsx';
@@ -12,82 +11,1029 @@ import MonitoringPanel from '../components/monitoring/MonitoringPanel.jsx';
 import GitHubIntegration from '../components/github/GitHubIntegration.jsx';
 import { createScan } from '../services/scanService.js';
 import useScanStatus from '../hooks/useScanStatus.js';
-import { Activity, AlertTriangle, ArrowDownUp, ArrowUpRight, Check, ChevronDown, ChevronRight, CircleHelp, Clock3, Code2, Copy, ExternalLink, Eye, FileDown, Filter, Github, Globe2, Layers3, Link2, ListFilter, LoaderCircle, Moon, MoreHorizontal, Play, Plus, RefreshCw, Search, Settings2, ShieldCheck, Sun, X } from 'lucide-react';
+import {
+  Activity,
+  ArrowUpRight,
+  Check,
+  Clock3,
+  FileDown,
+  Globe2,
+  Moon,
+  Sun,
+  X,
+  ShieldCheck,
+  ArrowLeft,
+  BookOpen,
+  History,
+  Settings2,
+  FileText,
+  CheckCircle2,
+  ExternalLink,
+  AlertCircle,
+  Code2,
+} from 'lucide-react';
 
 const demoIssues = [
-  { id: 'image-alt', title: 'Image missing alternative text', rule: 'image-alt', severity: 'critical', wcag: '1.1.1', count: 3, selector: 'img.hero-art', explanation: 'Images that convey information need a text alternative so screen reader users can understand their purpose.', snippet: '<img class="hero-art" src="/hero.jpg">', fix: '<img class="hero-art" src="/hero.jpg" alt="People collaborating around a table">', status: 'Not tested' },
-  { id: 'contrast', title: 'Text has insufficient contrast', rule: 'color-contrast', severity: 'serious', wcag: '1.4.3', count: 2, selector: '.muted-copy', explanation: 'This text does not have enough contrast against its background to remain readable for many people.', snippet: '<p class="muted-copy">Make room for better work.</p>', fix: '<p class="muted-copy">Make room for better work.</p>\n/* use #595959 or darker on white */', status: 'Not tested' },
-  { id: 'button-name', title: 'Button has no accessible name', rule: 'button-name', severity: 'serious', wcag: '4.1.2', count: 1, selector: 'button.icon-only', explanation: 'A button needs a programmatic name that describes its action.', snippet: '<button class="icon-only"><svg>…</svg></button>', fix: '<button class="icon-only" aria-label="Open your account"><svg>…</svg></button>', status: 'Not tested' },
-  { id: 'label', title: 'Form field has no label', rule: 'label', severity: 'moderate', wcag: '1.3.1', count: 1, selector: 'input#email', explanation: 'Visible and programmatic labels help people identify what information belongs in a field.', snippet: '<input id="email" type="email">', fix: '<label for="email">Work email</label>\n<input id="email" type="email">', status: 'Not tested' },
-  { id: 'lang', title: 'Document language is missing', rule: 'html-has-lang', severity: 'moderate', wcag: '3.1.1', count: 1, selector: 'html', explanation: 'Set the page language so assistive technology can pronounce content correctly.', snippet: '<html>', fix: '<html lang="en">', status: 'Not tested' },
+  {
+    id: 'image-alt',
+    title: 'Image missing alternative text',
+    rule: 'image-alt',
+    severity: 'critical',
+    wcag: '1.1.1',
+    count: 3,
+    selector: 'img.hero-art',
+    explanation:
+      'Images that convey information need a text alternative so screen reader users can understand their purpose.',
+    snippet: '<img class="hero-art" src="/hero.jpg">',
+    fix: '<img class="hero-art" src="/hero.jpg" alt="People collaborating around a table">',
+    status: 'Not tested',
+  },
+  {
+    id: 'contrast',
+    title: 'Text has insufficient contrast',
+    rule: 'color-contrast',
+    severity: 'serious',
+    wcag: '1.4.3',
+    count: 2,
+    selector: '.muted-copy',
+    explanation:
+      'This text does not have enough contrast against its background to remain readable for many people.',
+    snippet: '<p class="muted-copy">Make room for better work.</p>',
+    fix: '<p class="muted-copy">Make room for better work.</p>\n/* use #595959 or darker on white */',
+    status: 'Not tested',
+  },
+  {
+    id: 'button-name',
+    title: 'Button has no accessible name',
+    rule: 'button-name',
+    severity: 'serious',
+    wcag: '4.1.2',
+    count: 1,
+    selector: 'button.icon-only',
+    explanation: 'A button needs a programmatic name that describes its action.',
+    snippet: '<button class="icon-only"><svg>…</svg></button>',
+    fix: '<button class="icon-only" aria-label="Open your account"><svg>…</svg></button>',
+    status: 'Not tested',
+  },
+  {
+    id: 'label',
+    title: 'Form field has no label',
+    rule: 'label',
+    severity: 'moderate',
+    wcag: '1.3.1',
+    count: 1,
+    selector: 'input#email',
+    explanation:
+      'Visible and programmatic labels help people identify what information belongs in a field.',
+    snippet: '<input id="email" type="email">',
+    fix: '<label for="email">Work email</label>\n<input id="email" type="email">',
+    status: 'Not tested',
+  },
+  {
+    id: 'lang',
+    title: 'Document language is missing',
+    rule: 'html-has-lang',
+    severity: 'moderate',
+    wcag: '3.1.1',
+    count: 1,
+    selector: 'html',
+    explanation:
+      'Set the page language so assistive technology can pronounce content correctly.',
+    snippet: '<html>',
+    fix: '<html lang="en">',
+    status: 'Not tested',
+  },
 ];
 
-const demoHtml = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><style>*{box-sizing:border-box}body{margin:0;font:15px Inter,Arial,sans-serif;color:#171717;background:#fff}.nav{padding:18px 8%;border-bottom:1px solid #eee;display:flex;justify-content:space-between;font-weight:700}.nav span{color:#f27645}.hero{padding:70px 10%;background:#f7f6f3;min-height:290px}.hero h1{font-size:42px;letter-spacing:-2px;max-width:500px;margin:8px 0 16px}.hero-art{width:100%;height:170px;object-fit:cover;background:linear-gradient(120deg,#e8ae8a,#55443e);margin-top:22px}.muted-copy{color:#a6a6a6}.icon-only{width:38px;height:38px;border:0;background:#f3f3f3;border-radius:50%}.content{padding:34px 10%;display:flex;gap:30px}.content input{padding:12px;border:1px solid #ddd;border-radius:5px}.content button{background:#151515;color:white;border:0;border-radius:5px;padding:12px 20px}.badge{display:inline-block;background:#f5e9df;padding:6px 9px;border-radius:30px;font-size:11px}.broken{outline:3px solid #f27645!important;outline-offset:4px;box-shadow:0 0 0 7px #f2764520}small{color:#777}</style></head><body><header class="nav"><div>FIELDNOTE <span>STUDIO</span></div><button class="icon-only"><svg width="16" height="16"></svg></button></header><section class="hero"><div class="badge">A little more room to think</div><h1>Make room for better work.</h1><p class="muted-copy">Thoughtful tools for the way your team works together.</p><button>Explore the collection</button><img class="hero-art" src="" alt=""></section><section class="content"><div><h2>Ideas worth sharing</h2><p>Good work starts with a thoughtful space.</p></div><form><label for="email">Work email</label><br><input id="email" placeholder="you@company.com"><button>Join us</button></form></section></body></html>`;
+const demoHtml = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font:15px Inter,Arial,sans-serif;color:#171717;background:#fff}
+.nav{padding:18px 8%;border-bottom:1px solid #eee;display:flex;justify-content:space-between;font-weight:700}
+.nav span{color:#f27645}
+.hero{padding:70px 10%;background:#f7f6f3;min-height:290px}
+.hero h1{font-size:42px;letter-spacing:-2px;max-width:500px;margin:8px 0 16px}
+.hero-art{width:100%;height:170px;object-fit:cover;background:linear-gradient(120deg,#e8ae8a,#55443e);margin-top:22px}
+.muted-copy{color:#a6a6a6}
+.icon-only{width:38px;height:38px;border:0;background:#f3f3f3;border-radius:50%}
+.content{padding:34px 10%;display:flex;gap:30px}
+.content input{padding:12px;border:1px solid #ddd;border-radius:5px}
+.content button{background:#151515;color:white;border:0;border-radius:5px;padding:12px 20px}
+.badge{display:inline-block;background:#f5e9df;padding:6px 9px;border-radius:30px;font-size:11px}
+.broken{outline:3px solid #f27645!important;outline-offset:4px;box-shadow:0 0 0 7px #f2764520}
+small{color:#777}
+</style>
+</head>
+<body>
+<header class="nav">
+<div>FIELDNOTE <span>STUDIO</span></div>
+<button class="icon-only"><svg width="16" height="16"></svg></button>
+</header>
+<section class="hero">
+<div class="badge">A little more room to think</div>
+<h1>Make room for better work.</h1>
+<p class="muted-copy">Thoughtful tools for the way your team works together.</p>
+<button>Explore the collection</button>
+<img class="hero-art" src="" alt="">
+</section>
+<section class="content">
+<div>
+<h2>Ideas worth sharing</h2>
+<p>Good work starts with a thoughtful space.</p>
+</div>
+<form>
+<label for="email">Work email</label><br>
+<input id="email" placeholder="you@company.com">
+<button>Join us</button>
+</form>
+</section>
+</body>
+</html>`;
 
-function Badge({ children, tone = 'neutral' }) { return <span className={`badge badge-${tone}`}>{children}</span>; }
-function IconButton({ label, children, onClick }) { return <button aria-label={label} title={label} className="icon-button" onClick={onClick}>{children}</button>; }
+const cardStyle =
+  'overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-[0_4px_14px_rgba(0,0,0,0.035),0_14px_35px_rgba(0,0,0,0.035)] transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-black/10';
 
-export default function AuditDashboard() {
-  const [issues, setIssues] = useState([]); const [activeId, setActiveId] = useState(''); const [expanded, setExpanded] = useState(''); const [query, setQuery] = useState(''); const [severity, setSeverity] = useState('All severities');
-  const [page, setPage] = useState('workspace'); const [url, setUrl] = useState(''); const [scanId,setScanId]=useState(''); const [scanState, setScanState] = useState('idle'); const [scanError, setScanError] = useState(''); const [demo, setDemo] = useState(true); const [theme, setTheme] = useState('light'); const [mobileTab, setMobileTab] = useState('issues'); const [showCrawl, setShowCrawl] = useState(false); const [toast, setToast] = useState(''); const [filter, setFilter] = useState('All issues'); const [viewport, setViewport] = useState('desktop');
-  const iframe = useRef(null);
-  const {scan:scanResult,error:statusError}=useScanStatus(scanId);
-  const active = issues.find(i => i.id === activeId);
-  const visibleIssues = issues.filter(i => (severity === 'All severities' || i.severity === severity.toLowerCase()) && (filter !== 'Open' || i.status !== 'Ignored') && (filter !== 'Verified' || i.status === 'Verified') && `${i.title} ${i.rule} ${i.wcag}`.toLowerCase().includes(query.toLowerCase()));
-  const counts = { total: issues.filter(i => i.status !== 'Ignored').reduce((n, i) => n + i.count, 0), critical: issues.filter(i => i.severity === 'critical' && i.status !== 'Ignored').reduce((n, i) => n + i.count, 0), verified: issues.filter(i => i.status === 'Verified').reduce((n, i) => n + i.count, 0) };
-  const score = issues.length ? Math.max(0, 100 - issues.reduce((n, i) => n + i.count * ({ critical: 12, serious: 7, moderate: 4, minor: 2 }[i.severity] || 0), 0)) : null;
+const primaryButton =
+  'inline-flex min-h-[44px] items-center justify-center gap-2.5 rounded-xl bg-zinc-900 px-5 text-[12px] font-bold text-white shadow-[0_4px_14px_rgba(0,0,0,0.12)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-[0_8px_22px_rgba(0,0,0,0.18)] active:scale-[0.98] dark:bg-orange-600 dark:hover:bg-orange-500';
 
-  useEffect(() => { if (!toast) return; const id = setTimeout(() => setToast(''), 2800); return () => clearTimeout(id); }, [toast]);
-  useEffect(()=>{if(scanResult){setScanState(scanResult.status||'processing');if(scanResult.issues){setIssues(scanResult.issues);setActiveId(scanResult.issues[0]?.id||'')}}},[scanResult]);
-  useEffect(()=>{if(statusError){setScanState('failed');setScanError(statusError)}},[statusError]);
+const secondaryButton =
+  'inline-flex min-h-[43px] items-center justify-center gap-2.5 rounded-xl border border-zinc-200 bg-white px-4 text-[12px] font-bold text-zinc-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 hover:shadow-md active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:border-orange-800 dark:hover:bg-orange-500/10 dark:hover:text-orange-400';
 
-  async function startScan(event) {
-    event?.preventDefault(); setScanError(''); let normalized;
-    try { normalized = new URL(url).toString(); if (!['http:', 'https:'].includes(new URL(normalized).protocol)) throw new Error(); } catch { setScanError('Enter a valid website URL, including https://'); return; }
-    setScanState('queued'); setDemo(false);
-    try {
-      const scan = await createScan(normalized); const id = scan.scanId;
-      setScanId(id);
-      setScanState(scan.status || 'queued');
-    } catch (e) { setScanState('demo'); setDemo(true); setIssues(demoIssues); setActiveId(demoIssues[0].id); setExpanded(demoIssues[0].id); setScanError(`Live scan unavailable: ${e.userMessage || e.message || 'API could not be reached'}. Showing the clearly labeled sample audit.`); }
-  }
-  function toggleDecision(issue) { const next = issue.status === 'Ignored' ? 'Not tested' : 'Ignored'; setIssues(items => items.map(i => i.id === issue.id ? { ...i, status: next } : i)); }
-  async function copyFix(fix) { try { await navigator.clipboard.writeText(fix); setToast('Suggested fix copied'); } catch { setToast('Clipboard access is unavailable'); } }
-  function exportCsv() { if (!issues.length) return setToast('Run a scan before exporting a report'); const rows = [['Issue','Severity','WCAG','Rule','Elements','Suggested fix'], ...issues.map(i => [i.title,i.severity,i.wcag,i.rule,i.count,i.fix])]; const csv = rows.map(row => row.map(value => `"${String(value).replaceAll('"','""')}"`).join(',')).join('\n'); const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); link.download = 'accesslens-audit.csv'; link.click(); URL.revokeObjectURL(link.href); }
+function Badge({ children, tone = 'neutral' }) {
+  const tones = {
+    neutral:
+      'border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
+    orange:
+      'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900/50 dark:bg-orange-500/10 dark:text-orange-400',
+    green:
+      'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-500/10 dark:text-emerald-400',
+  };
 
-  return <div className={`app-shell theme-${theme}`}>
-    <Topbar page={page} onNavigate={setPage} theme={theme} onThemeChange={setTheme} demo={demo}/>
-    {page === 'workspace' ? <main id="workspace" className="main-content">
-      <section className="intro-row"><div><div className="eyebrow"><span className="eyebrow-line"/> ACCESSIBILITY WORKSPACE <span className="eyebrow-dot">/</span> OVERVIEW</div><h1>Audit workspace</h1><p>Find barriers. Make the web work for everyone.</p></div><div className="last-scan"><Clock3 size={14}/><span>{scanState === 'completed' ? 'Just now' : 'Ready to scan'}</span></div></section>
-      <ScanForm url={url} onUrlChange={setUrl} onSubmit={startScan} onCrawl={()=>setShowCrawl(true)} busy={['queued','processing','scanning'].includes(scanState)} demo={demo} state={scanState} error={scanError}/>
-      <SummaryCards issues={issues}/>
-      <div className="workspace-label"><div><span className="eyebrow-line"/> FINDINGS &amp; INSPECTION</div><div className="mobile-tabs"><button className={mobileTab==='issues'?'tab-current':''} onClick={()=>setMobileTab('issues')}>Issues</button><button className={mobileTab==='preview'?'tab-current':''} onClick={()=>setMobileTab('preview')}>Preview</button></div><span className="page-scope"><Globe2 size={13}/> {safeHost(url)}</span></div>
-      <section className="workspace-grid">
-        <IssuePanel className={mobileTab==='preview'?'mobile-hide':''} issues={issues} visibleIssues={visibleIssues} activeId={activeId} expanded={expanded} query={query} onQueryChange={setQuery} status={filter} onStatusChange={setFilter} severity={severity} onSeverityChange={setSeverity} onSort={()=>setToast('Sorted by severity')} onSelect={(issue,inspectOnly)=>{setActiveId(issue.id);if(!inspectOnly)setExpanded(expanded===issue.id?'':issue.id)}} onCopy={copyFix} onIgnore={toggleDecision} onAction={setToast}/>
-        <WebsitePreview className={mobileTab==='issues'?'mobile-hide':''} iframeRef={iframe} srcDoc={demoHtml} demo={demo} url={url} selector={active?.selector} active={active} viewport={viewport} onViewportChange={setViewport} onRefresh={()=>{if(iframe.current)iframe.current.srcdoc=demoHtml;setToast('Preview refreshed')}}/>
-      </section>
-      <ReportActions onExport={exportCsv} onCompare={()=>setToast('Scan comparison is available once scan history is persisted by the API.')} onPullRequest={()=>setPage('github')}/>
-      <footer className="footer"><span>ACCESSLENS <i/> BUILT FOR A MORE ACCESSIBLE WEB</span><span>Automated results are a guide and do not establish WCAG conformance.</span></footer>
-    </main> : <main className="main-content"><AppPage page={page} theme={theme} setTheme={setTheme} onToast={setToast} onExport={exportCsv} onNavigate={setPage} /></main>}
-    <CrawlModal open={showCrawl} url={url} onUrlChange={setUrl} onClose={()=>setShowCrawl(false)} onStart={()=>{setShowCrawl(false);setToast('Crawling is unavailable until the backend crawl endpoint is implemented.')}}/>
-    {toast&&<div className="toast" role="status"><Check size={15}/>{toast}<button aria-label="Dismiss" onClick={()=>setToast('')}><X size={14}/></button></div>}
-  </div>;
+  return (
+    <span
+      className={`inline-flex w-fit items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.04em] ${
+        tones[tone] || tones.neutral
+      }`}
+    >
+      {children}
+    </span>
+  );
 }
 
-function LockIcon(){return <span className="lock-icon">⌑</span>}
-function safeHost(value){try{return value ? new URL(value).host : 'sample-page.design'}catch{return 'sample-page.design'}}
+function safeHost(value) {
+  try {
+    return value ? new URL(value).host : 'sample-page.design';
+  } catch {
+    return 'sample-page.design';
+  }
+}
 
-function AppPage({page,theme,setTheme,onToast,onExport,onNavigate}) {
-  const [frequency,setFrequency]=useState('Weekly'); const [monitorUrl,setMonitorUrl]=useState(''); const [emailAlerts,setEmailAlerts]=useState(true); const [repo,setRepo]=useState(''); const title={history:'Scan history',monitoring:'Monitoring',github:'GitHub integration',reports:'Reports',docs:'Documentation',settings:'Settings'}[page];
-  const descriptions={history:'Review previous runs and compare accessibility changes.',monitoring:'Schedule recurring scans and get notified when new issues appear.',github:'Review proposed source changes and open pull requests with approval.',reports:'Export findings and remediation details for your team.',docs:'Learn how to use AccessLens and understand audit results.',settings:'Manage your workspace preferences and API connection.'};
+function PageHeader({
+  title,
+  description,
+  icon: Icon,
+  onNavigate,
+}) {
+  return (
+    <section className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 items-start gap-4">
+        {Icon && (
+          <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-orange-100 bg-orange-50 text-orange-600 shadow-sm dark:border-orange-900/40 dark:bg-orange-500/10 dark:text-orange-400 sm:flex">
+            <Icon size={23} strokeWidth={1.8} />
+          </div>
+        )}
 
-  if(page==='monitoring') return <MonitoringPanel/>;
-  if(page==='github') return <GitHubIntegration/>;  return <><section className="intro-row"><div><div className="eyebrow"><span className="eyebrow-line"/> ACCESSLENS <span className="eyebrow-dot">/</span> {page.toUpperCase()}</div><h1>{title}</h1><p>{descriptions[page]}</p></div><button className="button-secondary" onClick={()=>onNavigate('workspace')}> <Activity size={14}/> Workspace</button></section>
-    {page==='history'&&<section className="page-card"><div className="page-card-head"><div><h2>Previous scans</h2><p>Scan history is populated from saved backend scan runs.</p></div><Badge tone="orange">API REQUIRED</Badge></div><div className="page-empty"><div className="page-empty-icon"><Clock3 size={20}/></div><h3>No saved scans yet</h3><p>The current backend does not expose scan history. Completed runs will appear here when persistence and a history endpoint are connected.</p><code>GET /api/scans</code></div></section>}
-    {page==='monitoring'&&<><section className="page-card"><div className="page-card-head"><div><h2>Monitored websites</h2><p>Recurring scans are scheduled by the backend.</p></div><Badge>NOT CONNECTED</Badge></div><div className="setup-grid"><div className="setup-intro"><div className="setup-icon"><Activity size={19}/></div><h3>Keep an eye on regressions</h3><p>Set a scan cadence and get notified when new accessibility findings appear. Your schedule and scan history stay on the server.</p><ul><li><Check size={14}/> Daily or weekly schedules</li><li><Check size={14}/> New issue alerts</li><li><Check size={14}/> Compare recent scan snapshots</li></ul></div><div className="setup-form"><label className="form-label">Website URL<input value={monitorUrl} onChange={e=>setMonitorUrl(e.target.value)} placeholder="https://example.com"/></label><label className="form-label">Scan frequency<select value={frequency} onChange={e=>setFrequency(e.target.value)}><option>Daily</option><option>Weekly</option></select></label><label className="check-row"><input type="checkbox" checked={emailAlerts} onChange={e=>setEmailAlerts(e.target.checked)}/> Alert me about new findings</label><button className="button-primary" onClick={()=>onToast('Monitor settings are ready, but cannot be saved until POST /api/monitors is implemented.')}>Save monitor <ArrowUpRight size={14}/></button><small>Configuration is not saved until the monitor API is available.</small></div></div></section><section className="page-card compact-card"><h2>Recent activity</h2><div className="notice-row"><Clock3 size={16}/><span>No scheduled scans yet<small>Connect the monitor API to enable schedules and run history.</small></span></div></section></>}
-    {page==='github'&&<><section className="page-card"><div className="page-card-head"><div><h2>Repository connection</h2><p>Connect a source repository to prepare reviewed accessibility fixes.</p></div><Badge tone="orange">DISCONNECTED</Badge></div><div className="github-callout"><div className="github-icon"><Github size={24}/></div><div><h3>Ship fixes with confidence</h3><p>AccessLens can prepare a branch and pull request after you review and approve each proposed patch. It never commits to the default branch or merges automatically.</p><button className="button-primary" onClick={()=>onToast('GitHub App authentication is not configured on this backend.')}>Connect GitHub <ArrowUpRight size={14}/></button></div></div><div className="page-card-head subhead"><div><h2>Repository</h2><p>Repositories appear here after GitHub authorization.</p></div></div><label className="form-label repo-select">Choose repository<select value={repo} onChange={e=>setRepo(e.target.value)}><option value="">No repositories available</option></select></label><div className="notice-row"><ShieldCheck size={16}/><span>Permission and approval safeguards<small>Access tokens stay server-side. Each file change needs explicit review before PR creation.</small></span></div></section><section className="page-card compact-card"><h2>Pull request activity</h2><div className="page-empty small-empty"><p>No pull requests have been created.</p></div></section></>}
-    {page==='reports'&&<><section className="page-card"><div className="page-card-head"><div><h2>Export audit results</h2><p>Download findings with severity, WCAG references, selectors, and remediation suggestions.</p></div><Badge>CSV</Badge></div><div className="report-download"><div className="tile-icon"><FileDown size={20}/></div><div><strong>Accessibility findings</strong><small>Comma-separated values · opens in spreadsheet tools</small></div><button className="button-primary" onClick={onExport}>Download CSV <FileDown size={14}/></button></div><p className="report-note">PDF export and saved report history require report generation support from the backend. Automated results do not establish WCAG conformance.</p></section><section className="page-card compact-card"><h2>Included report fields</h2><div className="report-fields">{['Issue title and rule ID','Severity and affected node count','WCAG criterion','Affected selector and snippet','Suggested remediation','Verification state'].map(x=><span key={x}><Check size={14}/>{x}</span>)}</div></section></>}
-    {page==='docs'&&<><section className="page-card docs-intro"><Badge tone="orange">QUICK GUIDE</Badge><h2>Make your first audit useful</h2><p>AccessLens combines automated checks with a review workflow. Treat every result as a finding to investigate, not a compliance verdict.</p><button className="button-primary" onClick={()=>onToast('Return to Workspace from the top navigation to start an audit.')}>Open workspace <ArrowUpRight size={14}/></button></section><div className="docs-grid"><article className="page-card doc-card"><span className="doc-number">01</span><h3>Run a scan</h3><p>Enter an HTTP or HTTPS website URL and choose Scan website. The app reports the job state returned by the scan API.</p></article><article className="page-card doc-card"><span className="doc-number">02</span><h3>Inspect findings</h3><p>Filter by severity, open an issue to review its rule and selector, then select it to locate the matching node in the controlled sample preview.</p></article><article className="page-card doc-card"><span className="doc-number">03</span><h3>Review remediations</h3><p>Suggested changes are proposals. Copying a suggestion does not change the target site. Verify changes in an isolated environment before shipping.</p></article><article className="page-card doc-card"><span className="doc-number">04</span><h3>Understand the limits</h3><p>Automated checks catch common issues, but many accessibility requirements need human review. A clean scan is not proof of WCAG conformance.</p></article></div><section className="page-card compact-card"><h2>Backend capabilities</h2><div className="endpoint-list"><code>POST /api/scans</code><span>Submit scan</span><code>GET /api/scans/:id</code><span>Read scan status</span><code>POST /api/crawls</code><span>Not implemented</span><code>POST /api/fixes/:id/verify</code><span>Not implemented</span></div></section></>}
-    {page==='settings'&&<><section className="page-card"><div className="page-card-head"><div><h2>Appearance</h2><p>Adjust the workspace to your preference.</p></div></div><div className="setting-row"><span><strong>Color theme</strong><small>Choose a light or dark workspace.</small></span><div className="theme-choice"><button className={theme==='light'?'choice-active':''} onClick={()=>setTheme('light')}><Sun size={15}/> Light</button><button className={theme==='dark'?'choice-active':''} onClick={()=>setTheme('dark')}><Moon size={15}/> Dark</button></div></div></section><section className="page-card"><div className="page-card-head"><div><h2>API connection</h2><p>The frontend uses this public API base URL.</p></div><Badge>CLIENT CONFIG</Badge></div><div className="api-setting"><span>API base URL</span><code>{import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}</code></div><p className="report-note">Set <code>VITE_API_BASE_URL</code> in the frontend environment to connect a different API. Never put private keys or server credentials in Vite variables.</p></section><section className="page-card compact-card"><h2>About scan results</h2><p className="muted-paragraph">The score shown in the workspace is a project-defined estimate based on issue severity and affected element counts. It is not an official accessibility rating.</p></section></>}
-  </>;
+        <div>
+          <h1 className="text-[30px] font-extrabold tracking-[-1.2px] text-zinc-900 dark:text-zinc-100 sm:text-[36px]">
+            {title}
+          </h1>
+
+          <p className="mt-2 max-w-[650px] text-[13px] leading-[1.8] text-zinc-500 dark:text-zinc-400">
+            {description}
+          </p>
+        </div>
+      </div>
+
+      {onNavigate && (
+        <button
+          type="button"
+          onClick={() => onNavigate('workspace')}
+          className={`${secondaryButton} shrink-0 self-start`}
+        >
+          <ArrowLeft size={16} />
+          Workspace
+        </button>
+      )}
+    </section>
+  );
+}
+
+export default function AuditDashboard() {
+  const [issues, setIssues] = useState([]);
+  const [activeId, setActiveId] = useState('');
+  const [expanded, setExpanded] = useState('');
+  const [query, setQuery] = useState('');
+  const [severity, setSeverity] = useState('All severities');
+  const [page, setPage] = useState('workspace');
+  const [url, setUrl] = useState('');
+  const [scanId, setScanId] = useState('');
+  const [scanState, setScanState] = useState('idle');
+  const [scanError, setScanError] = useState('');
+  const [demo, setDemo] = useState(true);
+  const [theme, setTheme] = useState('light');
+  const [mobileTab, setMobileTab] = useState('issues');
+  const [showCrawl, setShowCrawl] = useState(false);
+  const [toast, setToast] = useState('');
+  const [filter, setFilter] = useState('All issues');
+  const [viewport, setViewport] = useState('desktop');
+
+  const iframe = useRef(null);
+
+  const { scan: scanResult, error: statusError } = useScanStatus(scanId);
+
+  const active = issues.find((issue) => issue.id === activeId);
+
+  const visibleIssues = issues.filter(
+    (issue) =>
+      (severity === 'All severities' ||
+        issue.severity === severity.toLowerCase()) &&
+      (filter !== 'Open' || issue.status !== 'Ignored') &&
+      (filter !== 'Verified' || issue.status === 'Verified') &&
+      `${issue.title} ${issue.rule} ${issue.wcag}`
+        .toLowerCase()
+        .includes(query.toLowerCase())
+  );
+
+  useEffect(() => {
+    if (!toast) return;
+
+    const timer = setTimeout(() => setToast(''), 2800);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
+  useEffect(() => {
+    if (!scanResult) return;
+
+    setScanState(scanResult.status || 'processing');
+
+    if (scanResult.issues) {
+      setIssues(scanResult.issues);
+      setActiveId(scanResult.issues[0]?.id || '');
+    }
+  }, [scanResult]);
+
+  useEffect(() => {
+    if (statusError) {
+      setScanState('failed');
+      setScanError(statusError);
+    }
+  }, [statusError]);
+
+  async function startScan(event) {
+    event?.preventDefault();
+    setScanError('');
+
+    let normalized;
+
+    try {
+      normalized = new URL(url).toString();
+
+      if (!['http:', 'https:'].includes(new URL(normalized).protocol)) {
+        throw new Error();
+      }
+    } catch {
+      setScanError('Enter a valid website URL, including https://');
+      return;
+    }
+
+    setScanState('queued');
+    setDemo(false);
+
+    try {
+      const scan = await createScan(normalized);
+
+      setScanId(scan.scanId);
+      setScanState(scan.status || 'queued');
+    } catch (error) {
+      setScanState('demo');
+      setDemo(true);
+      setIssues(demoIssues);
+      setActiveId(demoIssues[0].id);
+      setExpanded(demoIssues[0].id);
+
+      setScanError(
+        `Live scan unavailable: ${
+          error.userMessage ||
+          error.message ||
+          'API could not be reached'
+        }. Showing the clearly labeled sample audit.`
+      );
+    }
+  }
+
+  function toggleDecision(issue) {
+    const next =
+      issue.status === 'Ignored' ? 'Not tested' : 'Ignored';
+
+    setIssues((items) =>
+      items.map((item) =>
+        item.id === issue.id
+          ? { ...item, status: next }
+          : item
+      )
+    );
+  }
+
+  async function copyFix(fix) {
+    try {
+      await navigator.clipboard.writeText(fix);
+      setToast('Suggested fix copied');
+    } catch {
+      setToast('Clipboard access is unavailable');
+    }
+  }
+
+  function exportCsv() {
+    if (!issues.length) {
+      setToast('Run a scan before exporting a report');
+      return;
+    }
+
+    const rows = [
+      [
+        'Issue',
+        'Severity',
+        'WCAG',
+        'Rule',
+        'Elements',
+        'Suggested fix',
+      ],
+      ...issues.map((issue) => [
+        issue.title,
+        issue.severity,
+        issue.wcag,
+        issue.rule,
+        issue.count,
+        issue.fix,
+      ]),
+    ];
+
+    const csv = rows
+      .map((row) =>
+        row
+          .map((value) =>
+            `"${String(value ?? '').replaceAll('"', '""')}"`
+          )
+          .join(',')
+      )
+      .join('\n');
+
+    const objectUrl = URL.createObjectURL(
+      new Blob([csv], { type: 'text/csv' })
+    );
+
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = 'accesslens-audit.csv';
+    link.click();
+
+    URL.revokeObjectURL(objectUrl);
+  }
+
+  return (
+    <div
+      className={`app-shell theme-${theme} min-h-screen bg-[#f7f7f5] font-['DM_Sans'] text-zinc-900 transition-colors duration-300 dark:bg-[#131312] dark:text-zinc-100 ${
+        theme === 'dark' ? 'dark' : ''
+      }`}
+    >
+      <Topbar
+        page={page}
+        onNavigate={setPage}
+        theme={theme}
+        onThemeChange={setTheme}
+        demo={demo}
+      />
+
+      {page === 'workspace' ? (
+        <main
+          id="workspace"
+          className="mx-auto max-w-[1510px] px-4 pb-10 pt-8 sm:px-6 sm:pt-10 lg:px-10"
+        >
+          <section className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-[32px] font-extrabold leading-tight tracking-[-1.3px] text-zinc-900 dark:text-zinc-100 sm:text-[40px]">
+                Audit workspace
+              </h1>
+
+              <p className="mt-2.5 text-[13px] leading-relaxed text-zinc-500 dark:text-zinc-400 sm:text-[14px]">
+                Find accessibility barriers, inspect findings, and build
+                better web experiences.
+              </p>
+            </div>
+
+            <div className="inline-flex w-fit shrink-0 items-center gap-2.5 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-[11px] font-semibold text-zinc-600 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+              <Clock3 size={16} className="text-orange-500" />
+
+              <span>
+                {scanState === 'completed'
+                  ? 'Just scanned'
+                  : 'Ready to scan'}
+              </span>
+            </div>
+          </section>
+
+          <div className="mb-5">
+            <ScanForm
+              url={url}
+              onUrlChange={setUrl}
+              onSubmit={startScan}
+              onCrawl={() => setShowCrawl(true)}
+              busy={['queued', 'processing', 'scanning'].includes(
+                scanState
+              )}
+              demo={demo}
+              state={scanState}
+              error={scanError}
+            />
+          </div>
+
+          <SummaryCards issues={issues} />
+
+          <section className="mt-10">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="text-[20px] font-extrabold tracking-[-0.6px] text-zinc-900 dark:text-zinc-100 sm:text-[23px]">
+                  Findings & inspection
+                </h2>
+
+                <p className="mt-1.5 text-[12px] leading-relaxed text-zinc-500 dark:text-zinc-400">
+                  Explore detected issues and inspect affected elements.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="flex items-center rounded-xl border border-zinc-200 bg-zinc-100 p-1 md:hidden dark:border-zinc-700 dark:bg-zinc-800">
+                  {[
+                    ['issues', 'Issues'],
+                    ['preview', 'Preview'],
+                  ].map(([id, label]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setMobileTab(id)}
+                      aria-pressed={mobileTab === id}
+                      className={`rounded-lg px-4 py-2 text-[11px] font-bold transition-all duration-200 ${
+                        mobileTab === id
+                          ? 'bg-white text-orange-600 shadow-sm dark:bg-zinc-700 dark:text-orange-400'
+                          : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                <span className="hidden max-w-[250px] items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-[11px] font-medium text-zinc-500 shadow-sm sm:inline-flex dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+                  <Globe2 size={14} className="shrink-0 text-orange-500" />
+                  <span className="truncate">{safeHost(url)}</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="grid min-w-0 grid-cols-1 items-start gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)]">
+              <IssuePanel
+                className={mobileTab === 'preview' ? 'hidden md:flex' : ''}
+                issues={issues}
+                visibleIssues={visibleIssues}
+                activeId={activeId}
+                expanded={expanded}
+                query={query}
+                onQueryChange={setQuery}
+                status={filter}
+                onStatusChange={setFilter}
+                severity={severity}
+                onSeverityChange={setSeverity}
+                onSort={() => setToast('Sorted by severity')}
+                onSelect={(issue, inspectOnly) => {
+                  setActiveId(issue.id);
+
+                  if (!inspectOnly) {
+                    setExpanded(
+                      expanded === issue.id ? '' : issue.id
+                    );
+                  }
+                }}
+                onCopy={copyFix}
+                onIgnore={toggleDecision}
+                onAction={setToast}
+              />
+
+              <WebsitePreview
+                className={mobileTab === 'issues' ? 'hidden md:flex' : ''}
+                iframeRef={iframe}
+                srcDoc={demoHtml}
+                demo={demo}
+                url={url}
+                selector={active?.selector}
+                active={active}
+                viewport={viewport}
+                onViewportChange={setViewport}
+                onRefresh={() => {
+                  if (iframe.current) {
+                    iframe.current.srcdoc = demoHtml;
+                  }
+
+                  setToast('Preview refreshed');
+                }}
+              />
+            </div>
+          </section>
+
+          <ReportActions
+            onExport={exportCsv}
+            onCompare={() =>
+              setToast(
+                'Scan comparison is available once scan history is persisted by the API.'
+              )
+            }
+            onPullRequest={() => setPage('github')}
+          />
+
+          <footer className="mt-9 flex flex-col gap-3 border-t border-zinc-200 pt-6 text-[11px] text-zinc-400 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800 dark:text-zinc-500">
+            <span className="flex items-center gap-2 font-bold tracking-[0.04em]">
+              ACCESSLENS
+              <span className="h-1 w-1 rounded-full bg-orange-500" />
+              BUILT FOR A MORE ACCESSIBLE WEB
+            </span>
+
+            <span>
+              Automated results are a guide and do not establish WCAG
+              conformance.
+            </span>
+          </footer>
+        </main>
+      ) : (
+        <main className="mx-auto max-w-[1510px] px-4 pb-12 pt-8 sm:px-6 sm:pt-10 lg:px-10">
+          <AppPage
+            page={page}
+            theme={theme}
+            setTheme={setTheme}
+            onToast={setToast}
+            onExport={exportCsv}
+            onNavigate={setPage}
+          />
+        </main>
+      )}
+
+      <CrawlModal
+        open={showCrawl}
+        url={url}
+        onUrlChange={setUrl}
+        onClose={() => setShowCrawl(false)}
+        onStart={() => {
+          setShowCrawl(false);
+          setToast(
+            'Crawling is unavailable until the backend crawl endpoint is implemented.'
+          );
+        }}
+      />
+
+      {toast && (
+        <div
+          role="status"
+          className="fixed bottom-5 right-5 z-[100] flex max-w-[min(420px,calc(100vw-40px))] items-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3.5 text-[12px] font-semibold text-zinc-700 shadow-[0_12px_45px_rgba(0,0,0,0.15)] dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+        >
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
+            <Check size={16} />
+          </span>
+
+          <span className="flex-1 leading-relaxed">{toast}</span>
+
+          <button
+            type="button"
+            aria-label="Dismiss notification"
+            onClick={() => setToast('')}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-700 dark:hover:text-zinc-200"
+          >
+            <X size={15} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AppPage({
+  page,
+  theme,
+  setTheme,
+  onToast,
+  onExport,
+  onNavigate,
+}) {
+  const [frequency, setFrequency] = useState('Weekly');
+  const [monitorUrl, setMonitorUrl] = useState('');
+  const [emailAlerts, setEmailAlerts] = useState(true);
+  const [repo, setRepo] = useState('');
+
+  const title = {
+    history: 'Scan history',
+    monitoring: 'Monitoring',
+    github: 'GitHub integration',
+    reports: 'Reports',
+    docs: 'Documentation',
+    settings: 'Settings',
+  }[page];
+
+  const descriptions = {
+    history: 'Review previous runs and compare accessibility changes.',
+    monitoring:
+      'Schedule recurring scans and get notified when new issues appear.',
+    github:
+      'Review proposed source changes and open pull requests with approval.',
+    reports:
+      'Export findings and remediation details for your team.',
+    docs:
+      'Learn how to use AccessLens and understand audit results.',
+    settings:
+      'Manage your workspace preferences and API connection.',
+  };
+
+  const icons = {
+    history: History,
+    reports: FileText,
+    docs: BookOpen,
+    settings: Settings2,
+  };
+
+  if (page === 'monitoring') {
+    return <MonitoringPanel />;
+  }
+
+  if (page === 'github') {
+    return <GitHubIntegration />;
+  }
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title={title}
+        description={descriptions[page]}
+        icon={icons[page]}
+        onNavigate={onNavigate}
+      />
+
+      {page === 'history' && (
+        <section className={cardStyle}>
+          <div className="flex flex-wrap items-start justify-between gap-4 border-b border-zinc-100 px-6 py-6 sm:px-8 dark:border-zinc-800">
+            <div>
+              <h2 className="text-[18px] font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100">
+                Previous scans
+              </h2>
+
+              <p className="mt-2 text-[12px] text-zinc-500 dark:text-zinc-400">
+                Scan history is populated from saved backend scan runs.
+              </p>
+            </div>
+
+            <Badge tone="orange">API REQUIRED</Badge>
+          </div>
+
+          <div className="flex min-h-[370px] flex-col items-center justify-center px-6 py-12 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-50 text-zinc-400 shadow-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-500">
+              <Clock3 size={28} strokeWidth={1.6} />
+            </div>
+
+            <h3 className="mt-6 text-[17px] font-bold text-zinc-800 dark:text-zinc-200">
+              No saved scans yet
+            </h3>
+
+            <p className="mt-3 max-w-[440px] text-[12px] leading-7 text-zinc-500 dark:text-zinc-400">
+              The current backend does not expose scan history.
+              Completed runs will appear here when persistence
+              and a history endpoint are connected.
+            </p>
+
+            <code className="mt-5 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-2.5 font-mono text-[11px] text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+              GET /api/scans
+            </code>
+          </div>
+        </section>
+      )}
+
+      {page === 'reports' && (
+        <>
+          <section className={cardStyle}>
+            <div className="flex flex-wrap items-start justify-between gap-4 border-b border-zinc-100 px-6 py-6 sm:px-8 dark:border-zinc-800">
+              <div>
+                <h2 className="text-[18px] font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100">
+                  Export audit results
+                </h2>
+
+                <p className="mt-2 max-w-[640px] text-[12px] leading-relaxed text-zinc-500 dark:text-zinc-400">
+                  Download findings with severity, WCAG references,
+                  selectors, and remediation suggestions.
+                </p>
+              </div>
+
+              <Badge>CSV</Badge>
+            </div>
+
+            <div className="p-6 sm:p-8">
+              <div className="flex flex-col gap-5 rounded-xl border border-zinc-200 bg-zinc-50/60 p-5 sm:flex-row sm:items-center dark:border-zinc-700 dark:bg-zinc-800/40">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-orange-100 bg-orange-50 text-orange-600 dark:border-orange-900/40 dark:bg-orange-500/10 dark:text-orange-400">
+                  <FileDown size={23} />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-[14px] font-bold text-zinc-900 dark:text-zinc-100">
+                    Accessibility findings
+                  </h3>
+
+                  <p className="mt-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+                    Comma-separated values · opens in spreadsheet tools
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={onExport}
+                  className={primaryButton}
+                >
+                  <FileDown size={16} />
+                  Download CSV
+                </button>
+              </div>
+
+              <p className="mt-5 text-[11px] leading-7 text-zinc-500 dark:text-zinc-400">
+                PDF export and saved report history require report
+                generation support from the backend. Automated results
+                do not establish WCAG conformance.
+              </p>
+            </div>
+          </section>
+
+          <section className={`${cardStyle} p-6 sm:p-8`}>
+            <h2 className="text-[17px] font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100">
+              Included report fields
+            </h2>
+
+            <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                'Issue title and rule ID',
+                'Severity and affected node count',
+                'WCAG criterion',
+                'Affected selector and snippet',
+                'Suggested remediation',
+                'Verification state',
+              ].map((field) => (
+                <div
+                  key={field}
+                  className="flex items-center gap-3 text-[12px] text-zinc-600 dark:text-zinc-400"
+                >
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
+                    <Check size={14} />
+                  </span>
+
+                  {field}
+                </div>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
+
+      {page === 'docs' && (
+        <>
+          <section className={`${cardStyle} p-7 sm:p-9`}>
+            <Badge tone="orange">QUICK GUIDE</Badge>
+
+            <h2 className="mt-6 text-[25px] font-extrabold tracking-[-0.8px] text-zinc-900 dark:text-zinc-100">
+              Make your first audit useful
+            </h2>
+
+            <p className="mt-3 max-w-[720px] text-[13px] leading-[1.9] text-zinc-500 dark:text-zinc-400">
+              AccessLens combines automated checks with a review
+              workflow. Treat every result as a finding to
+              investigate, not a compliance verdict.
+            </p>
+
+            <button
+              type="button"
+              onClick={() =>
+                onToast(
+                  'Return to Workspace from the top navigation to start an audit.'
+                )
+              }
+              className={`${primaryButton} mt-6`}
+            >
+              Open workspace
+              <ArrowUpRight size={16} />
+            </button>
+          </section>
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            {[
+              {
+                number: '01',
+                title: 'Run a scan',
+                description:
+                  'Enter an HTTP or HTTPS website URL and choose Scan website. The app reports the job state returned by the scan API.',
+                icon: Globe2,
+              },
+              {
+                number: '02',
+                title: 'Inspect findings',
+                description:
+                  'Filter by severity, open an issue to review its rule and selector, then select it to locate the matching node in the controlled sample preview.',
+                icon: Activity,
+              },
+              {
+                number: '03',
+                title: 'Review remediations',
+                description:
+                  'Suggested changes are proposals. Copying a suggestion does not change the target site. Verify changes in an isolated environment before shipping.',
+                icon: Code2,
+              },
+              {
+                number: '04',
+                title: 'Understand the limits',
+                description:
+                  'Automated checks catch common issues, but many accessibility requirements need human review. A clean scan is not proof of WCAG conformance.',
+                icon: ShieldCheck,
+              },
+            ].map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <article
+                  key={item.number}
+                  className={`${cardStyle} group p-6 hover:-translate-y-1 sm:p-7`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[12px] font-bold text-orange-500">
+                      {item.number}
+                    </span>
+
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600 transition-transform duration-300 group-hover:scale-110 dark:bg-orange-500/10 dark:text-orange-400">
+                      <Icon size={19} />
+                    </div>
+                  </div>
+
+                  <h3 className="mt-5 text-[17px] font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                    {item.title}
+                  </h3>
+
+                  <p className="mt-3 text-[12px] leading-[1.85] text-zinc-500 dark:text-zinc-400">
+                    {item.description}
+                  </p>
+                </article>
+              );
+            })}
+          </div>
+
+          <section className={`${cardStyle} p-6 sm:p-8`}>
+            <h2 className="text-[17px] font-extrabold text-zinc-900 dark:text-zinc-100">
+              Backend capabilities
+            </h2>
+
+            <div className="mt-6 divide-y divide-zinc-100 dark:divide-zinc-800">
+              {[
+                ['POST /api/scans', 'Submit scan'],
+                ['GET /api/scans/:id', 'Read scan status'],
+                ['POST /api/crawls', 'Not implemented'],
+                ['POST /api/fixes/:id/verify', 'Not implemented'],
+              ].map(([endpoint, description]) => (
+                <div
+                  key={endpoint}
+                  className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <code className="w-fit rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 font-mono text-[11px] text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                    {endpoint}
+                  </code>
+
+                  <span className="text-[12px] text-zinc-500 dark:text-zinc-400">
+                    {description}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
+
+      {page === 'settings' && (
+        <>
+          <section className={cardStyle}>
+            <div className="border-b border-zinc-100 px-6 py-6 sm:px-8 dark:border-zinc-800">
+              <h2 className="text-[18px] font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100">
+                Appearance
+              </h2>
+
+              <p className="mt-2 text-[12px] text-zinc-500 dark:text-zinc-400">
+                Adjust the workspace to your preference.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-5 px-6 py-7 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+              <div>
+                <h3 className="text-[13px] font-bold text-zinc-800 dark:text-zinc-200">
+                  Color theme
+                </h3>
+
+                <p className="mt-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+                  Choose a light or dark workspace.
+                </p>
+              </div>
+
+              <div className="inline-flex w-fit items-center gap-1 rounded-xl border border-zinc-200 bg-zinc-100 p-1 dark:border-zinc-700 dark:bg-zinc-800">
+                {[
+                  ['light', 'Light', Sun],
+                  ['dark', 'Dark', Moon],
+                ].map(([value, label, Icon]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setTheme(value)}
+                    aria-pressed={theme === value}
+                    className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-[11px] font-bold transition-all duration-200 ${
+                      theme === value
+                        ? 'bg-white text-orange-600 shadow-sm dark:bg-zinc-700 dark:text-orange-400'
+                        : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200'
+                    }`}
+                  >
+                    <Icon size={16} />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className={cardStyle}>
+            <div className="flex flex-wrap items-start justify-between gap-4 border-b border-zinc-100 px-6 py-6 sm:px-8 dark:border-zinc-800">
+              <div>
+                <h2 className="text-[18px] font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100">
+                  API connection
+                </h2>
+
+                <p className="mt-2 text-[12px] text-zinc-500 dark:text-zinc-400">
+                  The frontend uses this public API base URL.
+                </p>
+              </div>
+
+              <Badge>CLIENT CONFIG</Badge>
+            </div>
+
+            <div className="px-6 py-7 sm:px-8">
+              <div className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-zinc-50/70 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-700 dark:bg-zinc-800/50">
+                <span className="text-[12px] font-semibold text-zinc-600 dark:text-zinc-400">
+                  API base URL
+                </span>
+
+                <code className="break-all rounded-lg border border-zinc-200 bg-white px-3 py-2 font-mono text-[11px] text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                  {import.meta.env.VITE_API_BASE_URL ||
+                    'http://localhost:5000'}
+                </code>
+              </div>
+
+              <p className="mt-5 text-[11px] leading-[1.9] text-zinc-500 dark:text-zinc-400">
+                Set{' '}
+                <code className="rounded bg-zinc-100 px-1.5 py-1 font-mono dark:bg-zinc-800">
+                  VITE_API_BASE_URL
+                </code>{' '}
+                in the frontend environment to connect a different API.
+                Never put private keys or server credentials in Vite
+                variables.
+              </p>
+            </div>
+          </section>
+
+          <section className={`${cardStyle} p-6 sm:p-8`}>
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400">
+                <AlertCircle size={19} />
+              </div>
+
+              <div>
+                <h2 className="text-[16px] font-extrabold text-zinc-900 dark:text-zinc-100">
+                  About scan results
+                </h2>
+
+                <p className="mt-2 text-[12px] leading-[1.9] text-zinc-500 dark:text-zinc-400">
+                  The score shown in the workspace is a project-defined
+                  estimate based on issue severity and affected element
+                  counts. It is not an official accessibility rating.
+                </p>
+              </div>
+            </div>
+          </section>
+        </>
+      )}
+    </div>
+  );
 }
